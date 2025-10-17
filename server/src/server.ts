@@ -271,10 +271,11 @@ app.get('/api/users/:userId', async (req: Request, res: Response) => {
 app.put('/api/users/:userId', upload.single('profilePicture'), async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
-    const { username, bio, status } = req.body;
+    const { username, email, bio, status } = req.body;
 
     const updateData: any = {};
     if (username) updateData.username = username;
+    if (email) updateData.email = email;
     if (bio !== undefined) updateData.bio = bio;
     if (status !== undefined) updateData.status = status;
 

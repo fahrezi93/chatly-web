@@ -39,6 +39,9 @@ const ChatPage: React.FC = () => {
   // Profile states
   const [showProfileModal, setShowProfileModal] = useState(false);
 
+  // Notification states
+  const [missedCallsCount, setMissedCallsCount] = useState(0);
+
   // View mode: 'chat' or 'group'
   const [viewMode, setViewMode] = useState<'chat' | 'group'>('chat');
 
@@ -96,9 +99,10 @@ const ChatPage: React.FC = () => {
     socket.on('user-status-changed', handleUserStatusChanged);
     socket.on('incoming-call', handleIncomingCall);
 
-    // Load contacts and groups
+    // Load contacts, groups, and missed calls
     loadContacts();
     loadGroups(userId);
+    loadMissedCallsCount(userId);
 
     // Cleanup listeners on unmount
     return () => {
@@ -132,6 +136,18 @@ const ChatPage: React.FC = () => {
       setGroups(response.data);
     } catch (error) {
       console.error('Error loading groups:', error);
+    }
+  };
+
+  const loadMissedCallsCount = async (userId: string) => {
+    try {
+      const response = await axios.get(`${API_URL}/api/call-history/${userId}`);
+      const missedCalls = response.data.filter((call: any) => 
+        call.status === 'missed' && call.receiverId === userId
+      );
+      setMissedCallsCount(missedCalls.length);
+    } catch (error) {
+      console.error('Error loading missed calls:', error);
     }
   };
 
@@ -206,14 +222,22 @@ const ChatPage: React.FC = () => {
         </div>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => setShowCallHistory(true)}
-            className="px-3 py-2 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-lg transition-all duration-200 flex items-center gap-2 text-sm font-medium"
+            onClick={() => {
+              setShowCallHistory(true);
+              setMissedCallsCount(0); // Reset count when opened
+            }}
+            className="px-3 py-2 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-lg transition-all duration-200 flex items-center gap-2 text-sm font-medium relative"
             title="Call History"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <span className="hidden sm:inline">History</span>
+            {missedCallsCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 shadow-soft">
+                {missedCallsCount > 99 ? '99+' : missedCallsCount}
+              </span>
+            )}
           </button>
 
           <button

@@ -16,6 +16,7 @@ const API_URL = 'http://localhost:5000';
 
 const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, user, onClose, onUpdate }) => {
   const [username, setUsername] = useState(user.username);
+  const [email, setEmail] = useState(user.email);
   const [bio, setBio] = useState(user.bio || '');
   const [status, setStatus] = useState(user.status || '');
   const [profilePicture, setProfilePicture] = useState<File | null>(null);
@@ -45,6 +46,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, user, onClose, onUp
     try {
       const formData = new FormData();
       formData.append('username', username);
+      formData.append('email', email);
       formData.append('bio', bio);
       formData.append('status', status);
       if (profilePicture) {
@@ -64,7 +66,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, user, onClose, onUp
       onUpdate(response.data);
       onClose();
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to update profile');
+      setError(err.response?.data?.message || 'Gagal memperbarui profile');
     } finally {
       setLoading(false);
     }
@@ -75,7 +77,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, user, onClose, onUp
       <div className="bg-white rounded-2xl w-full max-w-md shadow-large animate-[fadeIn_0.2s_ease-out]">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200">
-          <h2 className="text-lg font-semibold text-neutral-900">Edit Profile</h2>
+          <h2 className="text-lg font-semibold text-neutral-900">Edit Profil</h2>
           <button
             onClick={onClose}
             className="p-2 text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 rounded-lg transition-all duration-200"
@@ -117,16 +119,26 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, user, onClose, onUp
                 />
               </label>
             </div>
-            <p className="text-xs text-neutral-500 mt-2">Click to change photo</p>
+            <p className="text-xs text-neutral-500 mt-2">Klik untuk ubah foto</p>
           </div>
 
           {/* Username */}
           <Input
-            label="Username"
+            label="Nama Pengguna"
             type="text"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            placeholder="Your username"
+            placeholder="Nama pengguna Anda"
+            required
+          />
+
+          {/* Email */}
+          <Input
+            label="Email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="email@contoh.com"
             required
           />
 
@@ -137,11 +149,11 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, user, onClose, onUp
               type="text"
               value={status}
               onChange={(e) => setStatus(e.target.value)}
-              placeholder="Hey there! I am using Chat App"
+              placeholder="Hai! Saya menggunakan aplikasi chat ini"
               maxLength={100}
               className="w-full px-4 py-3 bg-white border border-neutral-300 rounded-xl text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 hover:border-neutral-400 text-sm"
             />
-            <p className="text-xs text-neutral-500 mt-1">{status.length}/100</p>
+            <p className="text-xs text-neutral-500 mt-1">{status.length}/100 karakter</p>
           </div>
 
           {/* Bio */}
@@ -150,12 +162,12 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, user, onClose, onUp
             <textarea
               value={bio}
               onChange={(e) => setBio(e.target.value)}
-              placeholder="Tell us about yourself..."
+              placeholder="Ceritakan tentang diri Anda..."
               maxLength={150}
               rows={3}
               className="w-full px-4 py-3 bg-white border border-neutral-300 rounded-xl text-neutral-900 placeholder-neutral-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 hover:border-neutral-400 resize-none text-sm"
             />
-            <p className="text-xs text-neutral-500 mt-1">{bio.length}/150</p>
+            <p className="text-xs text-neutral-500 mt-1">{bio.length}/150 karakter</p>
           </div>
 
           {/* Error Message */}
@@ -173,14 +185,14 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, user, onClose, onUp
               variant="secondary"
               className="flex-1"
             >
-              Cancel
+              Batal
             </Button>
             <Button
               type="submit"
               disabled={loading}
               className="flex-1"
             >
-              {loading ? 'Saving...' : 'Save Changes'}
+              {loading ? 'Menyimpan...' : 'Simpan Perubahan'}
             </Button>
           </div>
         </form>
