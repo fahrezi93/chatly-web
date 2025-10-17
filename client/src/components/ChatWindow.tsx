@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { io, Socket } from 'socket.io-client';
 import axios from 'axios';
 import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
 import Avatar from './Avatar';
@@ -12,6 +11,7 @@ import {
   incrementUnreadCount,
   clearUnreadCount
 } from '../utils/notification';
+import { useSocket } from '../context/SocketContext';
 
 interface ChatWindowProps {
   recipientId: string;
@@ -28,9 +28,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   recipient,
   onStartCall 
 }) => {
+  const { socket } = useSocket();
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
-  const [socket, setSocket] = useState<Socket | null>(null);
   const [isTyping, setIsTyping] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -63,20 +63,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       window.removeEventListener('blur', handleBlur);
     };
   }, [recipientId]);
-
-  // Initialize socket connection
-  useEffect(() => {
-    const newSocket = io(API_URL);
-    setSocket(newSocket);
-
-    newSocket.on('connect', () => {
-      newSocket.emit('user-connected', currentUserId);
-    });
-
-    return () => {
-      newSocket.close();
-    };
-  }, [currentUserId]);
 
   // Listen for incoming messages
   useEffect(() => {
@@ -276,39 +262,50 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
   if (!recipient) {
     return (
-      <div className="flex-1 bg-gray-900 flex items-center justify-center">
-        <p className="text-gray-500 text-lg">Pilih kontak untuk memulai chat</p>
+      <div className="flex-1 bg-neutral-50 flex items-center justify-center">
+        <div className="text-center">
+          <svg className="w-24 h-24 text-neutral-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+          </svg>
+          <p className="text-neutral-500 text-base font-medium">Select a contact to start chatting</p>
+          <p className="text-neutral-400 text-sm mt-2">Choose from your contacts on the left</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 bg-gray-900 flex flex-col">
+    <div className="flex-1 bg-white flex flex-col">
       {/* Header */}
-      <div className="p-4 bg-gray-800 border-b border-gray-700 flex items-center justify-between">
+      <div className="px-6 py-4 bg-white border-b border-neutral-200 flex items-center justify-between shadow-soft">
         <div className="flex items-center gap-3">
           <Avatar username={recipient.username} isOnline={recipient.isOnline} />
           <div>
-            <h3 className="text-white font-semibold">{recipient.username}</h3>
-            <p className="text-sm text-gray-400">
-              {recipient.isOnline ? 'Online' : 'Offline'}
+            <h3 className="text-neutral-900 font-semibold text-sm">{recipient.username}</h3>
+            <p className={`text-xs flex items-center gap-1 ${
+              recipient.isOnline ? 'text-emerald-600' : 'text-neutral-400'
+            }`}>
+              <span className={`w-1.5 h-1.5 rounded-full ${
+                recipient.isOnline ? 'bg-emerald-500' : 'bg-neutral-300'
+              }`}></span>
+              {recipient.isOnline ? 'Active now' : 'Offline'}
             </p>
           </div>
         </div>
         
-        <Button 
+        <button
           onClick={() => onStartCall(recipientId)}
-          className="flex items-center gap-2"
+          className="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-all duration-200 flex items-center gap-2 text-sm font-medium shadow-soft"
         >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
           </svg>
-          Panggilan Suara
-        </Button>
+          <span className="hidden sm:inline">Voice Call</span>
+        </button>
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex-1 overflow-y-auto p-6 space-y-3 bg-neutral-50">
         {messages.map((message, index) => {
           const isOwnMessage = message.senderId === currentUserId;
           
@@ -318,10 +315,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'}`}
             >
               <div
-                className={`max-w-xs lg:max-w-md xl:max-lg rounded-lg overflow-hidden ${
+                className={`max-w-xs lg:max-w-md xl:max-lg rounded-2xl overflow-hidden ${
                   isOwnMessage
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-800 text-white'
+                    ? 'bg-primary-500 text-white'
+                    : 'bg-white text-neutral-900 shadow-soft border border-neutral-100'
                 }`}
               >
                 {/* Image message */}
@@ -330,31 +327,39 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                     <img 
                       src={message.fileUrl} 
                       alt={message.fileName || 'Image'} 
-                      className="max-w-full h-auto rounded cursor-pointer hover:opacity-90 transition-opacity"
+                      className="max-w-full h-auto cursor-pointer hover:opacity-90 transition-opacity"
                       onClick={() => window.open(message.fileUrl, '_blank')}
                     />
                     <div className="px-4 py-2">
-                      <p className="text-sm opacity-90">{message.content}</p>
+                      <p className={`text-sm ${isOwnMessage ? 'text-white/90' : 'text-neutral-600'}`}>
+                        {message.content}
+                      </p>
                     </div>
                   </div>
                 )}
                 
                 {/* File message */}
                 {message.messageType === 'file' && message.fileUrl && (
-                  <div className="px-4 py-2">
+                  <div className="px-4 py-3">
                     <a 
                       href={message.fileUrl} 
                       download={message.fileName}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="flex items-center gap-2 hover:underline"
+                      className="flex items-center gap-3 hover:opacity-80 transition-opacity"
                     >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                      <div>
-                        <p className="font-medium">{message.fileName}</p>
-                        <p className="text-xs opacity-70">{message.content}</p>
+                      <div className={`p-2 rounded-lg ${
+                        isOwnMessage ? 'bg-white/20' : 'bg-neutral-100'
+                      }`}>
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">{message.fileName}</p>
+                        <p className={`text-xs ${isOwnMessage ? 'text-white/70' : 'text-neutral-500'}`}>
+                          {message.content}
+                        </p>
                       </div>
                     </a>
                   </div>
@@ -362,20 +367,20 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                 
                 {/* Text message */}
                 {(!message.messageType || message.messageType === 'text') && (
-                  <div className="px-4 py-2">
-                    <p className="break-words">{message.content}</p>
+                  <div className="px-4 py-2.5">
+                    <p className="break-words text-sm leading-relaxed">{message.content}</p>
                   </div>
                 )}
                 
                 <div className="flex items-center gap-1 px-4 pb-2">
-                  <p className="text-xs opacity-70">
-                    {new Date(message.createdAt).toLocaleTimeString('id-ID', {
+                  <p className={`text-xs ${isOwnMessage ? 'text-white/70' : 'text-neutral-400'}`}>
+                    {new Date(message.createdAt).toLocaleTimeString('en-US', {
                       hour: '2-digit',
                       minute: '2-digit'
                     })}
                   </p>
                   {isOwnMessage && (
-                    <span className="text-xs opacity-70">
+                    <span className="text-xs text-white/70 ml-1">
                       {message.isRead || message.status === 'read' ? '✓✓' : '✓'}
                     </span>
                   )}
@@ -388,22 +393,27 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       </div>
 
       {/* Input */}
-      <div className="bg-gray-800 border-t border-gray-700">
+      <div className="bg-white border-t border-neutral-200">
         {isTyping && (
-          <div className="px-4 pt-2 text-sm text-gray-400 italic">
-            {recipient?.username} sedang mengetik...
+          <div className="px-6 pt-3 text-xs text-neutral-500 flex items-center gap-2">
+            <div className="flex gap-1">
+              <span className="w-1.5 h-1.5 bg-neutral-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+              <span className="w-1.5 h-1.5 bg-neutral-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+              <span className="w-1.5 h-1.5 bg-neutral-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+            </div>
+            <span>{recipient?.username} is typing...</span>
           </div>
         )}
         
         {/* Emoji Picker */}
         {showEmojiPicker && (
-          <div className="absolute bottom-20 right-4 z-50">
+          <div className="absolute bottom-24 right-6 z-50 shadow-large rounded-lg">
             <EmojiPicker onEmojiClick={handleEmojiClick} />
           </div>
         )}
         
         <form onSubmit={handleSendMessage} className="p-4">
-          <div className="flex gap-2 items-center">
+          <div className="flex gap-2 items-center bg-neutral-100 rounded-2xl px-4 py-2">
             {/* File Upload Button */}
             <input
               type="file"
@@ -416,15 +426,15 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               type="button"
               onClick={() => fileInputRef.current?.click()}
               disabled={uploading}
-              className="p-2 text-gray-400 hover:text-white transition-colors disabled:opacity-50"
-              title="Kirim file"
+              className="p-2 text-neutral-500 hover:text-neutral-700 hover:bg-white rounded-lg transition-all duration-200 disabled:opacity-50"
+              title="Send file"
             >
               {uploading ? (
-                <svg className="animate-spin w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="animate-spin w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
               ) : (
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                 </svg>
               )}
@@ -434,10 +444,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             <button
               type="button"
               onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-              className="p-2 text-gray-400 hover:text-white transition-colors"
+              className="p-2 text-neutral-500 hover:text-neutral-700 hover:bg-white rounded-lg transition-all duration-200"
               title="Emoji"
             >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </button>
@@ -447,14 +457,24 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               type="text"
               value={newMessage}
               onChange={handleTyping}
-              placeholder="Ketik pesan..."
-              className="flex-1 px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-600"
+              placeholder="Type a message..."
+              className="flex-1 px-2 py-2 bg-transparent text-neutral-900 placeholder-neutral-400 focus:outline-none text-sm"
             />
             
             {/* Send Button */}
-            <Button type="submit" disabled={!newMessage.trim()}>
-              Kirim
-            </Button>
+            <button 
+              type="submit" 
+              disabled={!newMessage.trim()}
+              className={`p-2 rounded-lg transition-all duration-200 ${
+                newMessage.trim() 
+                  ? 'bg-primary-500 text-white hover:bg-primary-600 shadow-soft' 
+                  : 'bg-neutral-200 text-neutral-400 cursor-not-allowed'
+              }`}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+              </svg>
+            </button>
           </div>
         </form>
       </div>

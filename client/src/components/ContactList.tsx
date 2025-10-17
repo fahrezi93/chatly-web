@@ -40,45 +40,62 @@ const ContactList: React.FC<ContactListProps> = ({
   }, [contacts, currentUserId]); // Fixed dependency
 
   return (
-    <div className="w-64 bg-gray-800 border-r border-gray-700 flex flex-col">
-      <div className="p-4 border-b border-gray-700">
-        <h2 className="text-xl font-bold text-white">Kontak</h2>
+    <div className="w-80 bg-white border-r border-neutral-200 flex flex-col">
+      <div className="px-6 py-4 border-b border-neutral-200">
+        <h2 className="text-base font-semibold text-neutral-900">Contacts</h2>
+        <p className="text-xs text-neutral-500 mt-1">{filteredContacts.length} contacts</p>
       </div>
       
       <div className="flex-1 overflow-y-auto">
         {filteredContacts.length === 0 ? (
-          <div className="p-4 text-gray-500 text-center">
-            Tidak ada kontak
+          <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+            <svg className="w-16 h-16 text-neutral-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+            </svg>
+            <p className="text-neutral-500 text-sm">No contacts yet</p>
           </div>
         ) : (
-          filteredContacts.map((contact) => {
-            const unreadCount = unreadCounts[contact._id] || 0;
-            
-            return (
-              <div
-                key={contact._id}
-                onClick={() => onSelectContact(contact._id)}
-                className={`p-4 flex items-center gap-3 cursor-pointer transition-colors duration-200 hover:bg-gray-700 ${
-                  selectedUserId === contact._id ? 'bg-gray-700' : ''
-                }`}
-              >
-                <Avatar username={contact.username} isOnline={contact.isOnline} />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <p className="text-white font-medium truncate">{contact.username}</p>
-                    {unreadCount > 0 && (
-                      <span className="bg-red-500 text-white text-xs font-bold rounded-full px-2 py-1 min-w-[20px] text-center">
-                        {unreadCount > 99 ? '99+' : unreadCount}
-                      </span>
-                    )}
+          <div className="py-2">
+            {filteredContacts.map((contact) => {
+              const unreadCount = unreadCounts[contact._id] || 0;
+              
+              return (
+                <div
+                  key={contact._id}
+                  onClick={() => onSelectContact(contact._id)}
+                  className={`px-4 py-3 mx-2 mb-1 flex items-center gap-3 cursor-pointer transition-all duration-200 rounded-lg ${
+                    selectedUserId === contact._id 
+                      ? 'bg-primary-50 shadow-soft' 
+                      : 'hover:bg-neutral-50'
+                  }`}
+                >
+                  <Avatar username={contact.username} isOnline={contact.isOnline} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-0.5">
+                      <p className={`font-medium truncate text-sm ${
+                        selectedUserId === contact._id ? 'text-neutral-900' : 'text-neutral-800'
+                      }`}>
+                        {contact.username}
+                      </p>
+                      {unreadCount > 0 && (
+                        <span className="bg-primary-500 text-white text-xs font-semibold rounded-full px-2 py-0.5 min-w-[20px] text-center">
+                          {unreadCount > 99 ? '99+' : unreadCount}
+                        </span>
+                      )}
+                    </div>
+                    <p className={`text-xs flex items-center gap-1 ${
+                      contact.isOnline ? 'text-emerald-600' : 'text-neutral-400'
+                    }`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${
+                        contact.isOnline ? 'bg-emerald-500' : 'bg-neutral-300'
+                      }`}></span>
+                      {contact.isOnline ? 'Online' : 'Offline'}
+                    </p>
                   </div>
-                  <p className="text-sm text-gray-400">
-                    {contact.isOnline ? 'Online' : 'Offline'}
-                  </p>
                 </div>
-              </div>
-            );
-          })
+              );
+            })}
+          </div>
         )}
       </div>
     </div>

@@ -11,6 +11,7 @@ import path from 'path';
 import fs from 'fs';
 import User from './models/User';
 import Message from './models/Message';
+import CallHistory from './models/CallHistory';
 
 dotenv.config();
 
@@ -72,6 +73,9 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key';
 
 // Map to store userId -> socketId
 const userSockets = new Map<string, string>();
+
+// Map to store active calls: callId -> callHistoryId
+const activeCalls = new Map<string, string>();
 
 // ============ REST API Routes ============
 
@@ -179,6 +183,44 @@ app.get('/api/messages/:userId/:recipientId', async (req: Request, res: Response
     res.json(messages);
   } catch (error) {
     console.error('Get messages error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get call history for a user
+app.get('/api/call-history/:userId', async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+
+    // Get call history where user is either caller or receiver
+    const callHistory = await CallHistory.find({
+      $or: [{ callerId: userId }, { receiverId: userId }]
+    })
+      .sort({ createdAt: -1 })
+      .limit(100)
+      .lean();
+
+    // Populate user details
+    const userIds = new Set<string>();
+    callHistory.forEach(call => {
+      userIds.add(call.callerId);
+      userIds.add(call.receiverId);
+    });
+
+    const users = await User.find({ _id: { $in: Array.from(userIds) } }, { password: 0 });
+    const userMap = new Map(users.map(u => [(u._id as any).toString(), u]));
+
+    // Add user details to call history
+    const enrichedHistory = callHistory.map(call => ({
+      ...call,
+      caller: userMap.get(call.callerId),
+      receiver: userMap.get(call.receiverId),
+      isIncoming: call.receiverId === userId
+    }));
+
+    res.json(enrichedHistory);
+  } catch (error) {
+    console.error('Get call history error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -333,63 +375,141 @@ io.on('connection', (socket) => {
   });
 
   // WebRTC Signaling - Call user
-  socket.on('call-user', (data: { callerId: string; receiverId: string; offer: any }) => {
+  socket.on('call-user', async (data: { callerId: string; receiverId: string; offer: any }) => {
     const { receiverId, offer, callerId } = data;
     console.log(`📞 Call from ${callerId} to ${receiverId}`);
     
-    const receiverSocketId = userSockets.get(receiverId);
-    console.log(`Receiver socket ID: ${receiverSocketId}`);
-    
-    if (receiverSocketId) {
-      io.to(receiverSocketId).emit('incoming-call', { callerId, offer });
-      console.log(`✅ Incoming call event sent to ${receiverId}`);
-    } else {
-      console.log(`❌ Receiver ${receiverId} not found in userSockets`);
+    try {
+      // Create call history entry
+      const callHistory = new CallHistory({
+        callerId,
+        receiverId,
+        startTime: new Date(),
+        status: 'no-answer',
+        callType: 'voice'
+      });
+      await callHistory.save();
+      
+      // Store call history ID with unique call identifier
+      const callId = `${callerId}-${receiverId}-${Date.now()}`;
+      activeCalls.set(callId, (callHistory._id as any).toString());
+      
+      console.log(`📝 Call history created: ${callHistory._id}`);
+      
+      const receiverSocketId = userSockets.get(receiverId);
+      console.log(`Receiver socket ID: ${receiverSocketId}`);
+      console.log(`Current userSockets map:`, Array.from(userSockets.entries()));
+      
+      if (receiverSocketId) {
+        io.to(receiverSocketId).emit('incoming-call', { callerId, offer, callId });
+        console.log(`✅ Incoming call event sent to ${receiverId} (socket: ${receiverSocketId})`);
+      } else {
+        console.log(`❌ Receiver ${receiverId} not found in userSockets`);
+        // Update call history as missed
+        callHistory.status = 'missed';
+        await callHistory.save();
+        // Send error back to caller
+        socket.emit('call-failed', { message: 'User tidak online' });
+      }
+    } catch (error) {
+      console.error('Error creating call history:', error);
     }
   });
 
   // WebRTC Signaling - Answer call
-  socket.on('answer-call', (data: { callerId: string; answer: any }) => {
-    const { callerId, answer } = data;
-    console.log(`📱 Answer from receiver to caller ${callerId}`);
+  socket.on('answer-call', async (data: { callerId: string; receiverId: string; answer: any; callId?: string }) => {
+    const { callerId, receiverId, answer, callId } = data;
+    console.log(`📱 Answer from ${receiverId} to caller ${callerId}`);
     
-    const callerSocketId = userSockets.get(callerId);
-    
-    if (callerSocketId) {
-      io.to(callerSocketId).emit('call-answered', { answer });
-      console.log(`✅ Call answered event sent to ${callerId}`);
-    } else {
-      console.log(`❌ Caller ${callerId} not found in userSockets`);
+    try {
+      // Update call history status to completed
+      if (callId && activeCalls.has(callId)) {
+        const callHistoryId = activeCalls.get(callId);
+        await CallHistory.findByIdAndUpdate(callHistoryId, {
+          status: 'completed',
+          startTime: new Date() // Update actual start time when answered
+        });
+        console.log(`✅ Call history updated: ${callHistoryId} - status: completed`);
+      }
+      
+      const callerSocketId = userSockets.get(callerId);
+      console.log(`Caller socket ID: ${callerSocketId}`);
+      
+      if (callerSocketId) {
+        io.to(callerSocketId).emit('call-answered', { receiverId, answer });
+        console.log(`✅ Call answered event sent to ${callerId} (socket: ${callerSocketId})`);
+      } else {
+        console.log(`❌ Caller ${callerId} not found in userSockets`);
+      }
+    } catch (error) {
+      console.error('Error updating call history on answer:', error);
     }
   });
 
   // WebRTC Signaling - ICE candidate
-  socket.on('ice-candidate', (data: { targetUserId: string; candidate: any }) => {
-    const { targetUserId, candidate } = data;
+  socket.on('ice-candidate', (data: { targetUserId: string; senderId: string; candidate: any }) => {
+    const { targetUserId, senderId, candidate } = data;
     const targetSocketId = userSockets.get(targetUserId);
     
+    console.log(`🧊 ICE candidate from ${senderId} to ${targetUserId}`);
+    
     if (targetSocketId) {
-      io.to(targetSocketId).emit('ice-candidate', { candidate });
+      io.to(targetSocketId).emit('ice-candidate', { senderId, candidate });
+      console.log(`✅ ICE candidate sent to ${targetUserId}`);
+    } else {
+      console.log(`❌ Target ${targetUserId} not found for ICE candidate`);
     }
   });
 
   // Reject call
-  socket.on('reject-call', (data: { callerId: string }) => {
-    const { callerId } = data;
-    const callerSocketId = userSockets.get(callerId);
+  socket.on('reject-call', async (data: { callerId: string; callId?: string }) => {
+    const { callerId, callId } = data;
     
-    if (callerSocketId) {
-      io.to(callerSocketId).emit('call-rejected');
+    try {
+      // Update call history status to rejected
+      if (callId && activeCalls.has(callId)) {
+        const callHistoryId = activeCalls.get(callId);
+        await CallHistory.findByIdAndUpdate(callHistoryId, {
+          status: 'rejected',
+          endTime: new Date()
+        });
+        activeCalls.delete(callId);
+        console.log(`✅ Call history updated: ${callHistoryId} - status: rejected`);
+      }
+      
+      const callerSocketId = userSockets.get(callerId);
+      
+      if (callerSocketId) {
+        io.to(callerSocketId).emit('call-rejected');
+      }
+    } catch (error) {
+      console.error('Error updating call history on reject:', error);
     }
   });
 
   // End call
-  socket.on('end-call', (data: { targetUserId: string }) => {
-    const { targetUserId } = data;
-    const targetSocketId = userSockets.get(targetUserId);
+  socket.on('end-call', async (data: { targetUserId: string; callId?: string; duration?: number }) => {
+    const { targetUserId, callId, duration } = data;
     
-    if (targetSocketId) {
-      io.to(targetSocketId).emit('call-ended');
+    try {
+      // Update call history with end time and duration
+      if (callId && activeCalls.has(callId)) {
+        const callHistoryId = activeCalls.get(callId);
+        await CallHistory.findByIdAndUpdate(callHistoryId, {
+          endTime: new Date(),
+          duration: duration || 0
+        });
+        activeCalls.delete(callId);
+        console.log(`✅ Call history updated: ${callHistoryId} - ended, duration: ${duration}s`);
+      }
+      
+      const targetSocketId = userSockets.get(targetUserId);
+      
+      if (targetSocketId) {
+        io.to(targetSocketId).emit('call-ended');
+      }
+    } catch (error) {
+      console.error('Error updating call history on end:', error);
     }
   });
 
