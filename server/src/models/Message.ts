@@ -5,6 +5,10 @@ export interface IMessage extends Document {
   receiverId: mongoose.Types.ObjectId;
   content: string;
   isRead: boolean;
+  messageType: 'text' | 'image' | 'file';
+  fileUrl?: string;
+  fileName?: string;
+  fileType?: string;
   createdAt: Date;
 }
 
@@ -26,6 +30,20 @@ const MessageSchema: Schema = new Schema({
   isRead: {
     type: Boolean,
     default: false
+  },
+  messageType: {
+    type: String,
+    enum: ['text', 'image', 'file'],
+    default: 'text'
+  },
+  fileUrl: {
+    type: String
+  },
+  fileName: {
+    type: String
+  },
+  fileType: {
+    type: String
   }
 }, {
   timestamps: true

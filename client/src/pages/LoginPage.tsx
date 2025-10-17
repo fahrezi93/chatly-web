@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import Button from '../components/Button';
 import Input from '../components/Input';
+import { saveAuthData, isAuthenticated } from '../utils/auth';
 
 const API_URL = 'http://localhost:5000';
 
@@ -14,8 +15,16 @@ const LoginPage: React.FC = () => {
     password: '',
     username: ''
   });
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Auto-login if already authenticated
+  useEffect(() => {
+    if (isAuthenticated()) {
+      navigate('/chat');
+    }
+  }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,10 +39,13 @@ const LoginPage: React.FC = () => {
 
       const response = await axios.post(`${API_URL}${endpoint}`, payload);
       
-      // Save token and user info
-      localStorage.setItem('token', response.data.token);
-      localStorage.setItem('userId', response.data.user.id);
-      localStorage.setItem('username', response.data.user.username);
+      // Save token and user info with remember me option
+      saveAuthData(
+        response.data.token,
+        response.data.user.id,
+        response.data.user.username,
+        rememberMe
+      );
 
       // Navigate to chat
       navigate('/chat');
@@ -83,6 +95,21 @@ const LoginPage: React.FC = () => {
             onChange={(e) => setFormData({ ...formData, password: e.target.value })}
             required
           />
+
+          {isLogin && (
+            <div className="flex items-center">
+              <input
+                type="checkbox"
+                id="rememberMe"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500"
+              />
+              <label htmlFor="rememberMe" className="ml-2 text-sm text-gray-300">
+                Ingat saya
+              </label>
+            </div>
+          )}
 
           {error && (
             <div className="bg-red-500 bg-opacity-20 border border-red-500 text-red-500 px-4 py-2 rounded">

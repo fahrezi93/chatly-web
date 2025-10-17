@@ -4,12 +4,24 @@ Aplikasi chat real-time berbasis web dengan fitur panggilan suara menggunakan We
 
 ## 🚀 Fitur Utama
 
+### Core Features:
 - ✅ **Chat Real-time** - Komunikasi instant menggunakan Socket.IO
 - ✅ **Panggilan Suara** - Fitur voice call menggunakan WebRTC
 - ✅ **Autentikasi** - Register dan login dengan JWT
 - ✅ **Status Online/Offline** - Melihat status kehadiran pengguna
 - ✅ **Tema Gelap** - Desain modern dengan dark mode
 - ✅ **Responsif** - Tampilan optimal di desktop dan mobile
+
+### 🆕 Fitur Baru (Essential Features):
+- ✅ **Persistensi Login** - Auto-login, remember me, session management
+- ✅ **Notifikasi Pesan** - Browser notifications, sound alerts, badge counter
+- ✅ **Read Receipts** - Tanda centang pesan terkirim/dibaca (✓✓)
+- ✅ **Typing Indicator** - Indikator "sedang mengetik..."
+- ✅ **Upload Media** - Kirim gambar dan file (PDF, DOC, dll)
+- ✅ **Emoji Picker** - Pilih emoji untuk menambahkan ke pesan
+- ✅ **Preview Gambar** - Tampilan gambar langsung di chat
+
+📖 **Lihat dokumentasi lengkap fitur baru di [NEW_FEATURES.md](NEW_FEATURES.md)**
 
 ## 🛠️ Teknologi
 

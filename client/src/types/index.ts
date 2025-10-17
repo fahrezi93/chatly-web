@@ -14,6 +14,11 @@ export interface Message {
   content: string;
   createdAt: Date;
   isRead?: boolean;
+  status?: 'sending' | 'sent' | 'delivered' | 'read';
+  messageType?: 'text' | 'image' | 'file';
+  fileUrl?: string;
+  fileName?: string;
+  fileType?: string;
 }
 
 export interface AuthResponse {

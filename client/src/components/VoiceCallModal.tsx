@@ -72,14 +72,18 @@ const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
 
         // If caller, create offer
         if (isCaller) {
+          console.log('Creating offer to call:', recipientId);
           const offer = await peerConnection.createOffer();
           await peerConnection.setLocalDescription(offer);
           
+          console.log('Emitting call-user event with offer');
           socket.emit('call-user', {
             callerId: currentUserId,
             receiverId: recipientId,
             offer: offer
           });
+        } else {
+          console.log('Waiting for incoming call as receiver');
         }
       } catch (error) {
         console.error('Error initializing call:', error);
@@ -91,8 +95,11 @@ const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
     initCall();
 
     // Socket event listeners
-    const handleIncomingCall = async (data: { callerId: string; offer: RTCSessionDescriptionInit }) => {
-      if (!peerConnectionRef.current) return;
+    const handleIncomingCallOffer = async (data: { callerId: string; offer: RTCSessionDescriptionInit }) => {
+      // Only handle if we are receiver and offer is from the expected caller
+      if (!peerConnectionRef.current || isCaller || data.callerId !== recipientId) return;
+      
+      console.log('VoiceCallModal: Received offer from:', data.callerId);
       
       try {
         await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(data.offer));
@@ -103,16 +110,21 @@ const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
           callerId: data.callerId,
           answer: answer
         });
+        
+        console.log('VoiceCallModal: Answer sent to caller');
       } catch (error) {
-        console.error('Error handling incoming call:', error);
+        console.error('VoiceCallModal: Error handling offer:', error);
       }
     };
 
     const handleCallAnswered = async (data: { answer: RTCSessionDescriptionInit }) => {
       if (!peerConnectionRef.current) return;
       
+      console.log('Call answered, setting remote description');
+      
       try {
         await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(data.answer));
+        setCallStatus('connected');
       } catch (error) {
         console.error('Error handling call answer:', error);
       }
@@ -140,14 +152,19 @@ const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
       onClose();
     };
 
-    socket.on('incoming-call', handleIncomingCall);
+    // Setup socket listeners
+    if (!isCaller) {
+      socket.on('incoming-call', handleIncomingCallOffer);
+    }
     socket.on('call-answered', handleCallAnswered);
     socket.on('ice-candidate', handleIceCandidate);
     socket.on('call-ended', handleCallEnded);
     socket.on('call-rejected', handleCallRejected);
 
     return () => {
-      socket.off('incoming-call', handleIncomingCall);
+      if (!isCaller) {
+        socket.off('incoming-call', handleIncomingCallOffer);
+      }
       socket.off('call-answered', handleCallAnswered);
       socket.off('ice-candidate', handleIceCandidate);
       socket.off('call-ended', handleCallEnded);
