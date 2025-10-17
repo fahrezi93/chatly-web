@@ -57,12 +57,19 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4">
-      <div className="bg-gray-800 rounded-lg shadow-xl p-8 w-full max-w-md">
+    <div className="min-h-screen bg-neutral-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl shadow-large p-8 w-full max-w-md border border-neutral-100">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Chat App</h1>
-          <p className="text-gray-400">
-            {isLogin ? 'Masuk ke akun Anda' : 'Buat akun baru'}
+          <div className="w-14 h-14 bg-primary-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+            </svg>
+          </div>
+          <h1 className="text-2xl font-bold text-neutral-900 mb-2">
+            {isLogin ? 'Welcome back' : 'Create account'}
+          </h1>
+          <p className="text-neutral-500 text-sm">
+            {isLogin ? 'Sign in to continue messaging' : 'Get started with your new account'}
           </p>
         </div>
 
@@ -71,7 +78,7 @@ const LoginPage: React.FC = () => {
             <Input
               label="Username"
               type="text"
-              placeholder="Masukkan username"
+              placeholder="Enter your username"
               value={formData.username}
               onChange={(e) => setFormData({ ...formData, username: e.target.value })}
               required
@@ -81,7 +88,7 @@ const LoginPage: React.FC = () => {
           <Input
             label="Email"
             type="email"
-            placeholder="Masukkan email"
+            placeholder="Enter your email"
             value={formData.email}
             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
             required
@@ -90,7 +97,7 @@ const LoginPage: React.FC = () => {
           <Input
             label="Password"
             type="password"
-            placeholder="Masukkan password"
+            placeholder="Enter your password"
             value={formData.password}
             onChange={(e) => setFormData({ ...formData, password: e.target.value })}
             required
@@ -103,16 +110,16 @@ const LoginPage: React.FC = () => {
                 id="rememberMe"
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
-                className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500"
+                className="w-4 h-4 text-primary-600 bg-white border-neutral-300 rounded focus:ring-2 focus:ring-primary-500 cursor-pointer"
               />
-              <label htmlFor="rememberMe" className="ml-2 text-sm text-gray-300">
-                Ingat saya
+              <label htmlFor="rememberMe" className="ml-2 text-sm text-neutral-600 cursor-pointer">
+                Remember me
               </label>
             </div>
           )}
 
           {error && (
-            <div className="bg-red-500 bg-opacity-20 border border-red-500 text-red-500 px-4 py-2 rounded">
+            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
               {error}
             </div>
           )}
@@ -122,7 +129,7 @@ const LoginPage: React.FC = () => {
             className="w-full"
             disabled={loading}
           >
-            {loading ? 'Memproses...' : (isLogin ? 'Masuk' : 'Daftar')}
+            {loading ? 'Processing...' : (isLogin ? 'Sign in' : 'Create account')}
           </Button>
         </form>
 
@@ -132,9 +139,9 @@ const LoginPage: React.FC = () => {
               setIsLogin(!isLogin);
               setError('');
             }}
-            className="text-blue-400 hover:text-blue-300 transition-colors"
+            className="text-primary-600 hover:text-primary-700 transition-colors text-sm font-medium"
           >
-            {isLogin ? 'Belum punya akun? Daftar' : 'Sudah punya akun? Masuk'}
+            {isLogin ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
           </button>
         </div>
       </div>

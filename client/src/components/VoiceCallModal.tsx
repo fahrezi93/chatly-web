@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Socket } from 'socket.io-client';
-import Button from './Button';
 import Modal from './Modal';
 
 interface VoiceCallModalProps {
@@ -448,19 +447,19 @@ const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-      <div className="bg-gray-800 rounded-lg p-8 w-96 text-center">
-        <div className="mb-6">
-          <div className="w-24 h-24 bg-blue-600 rounded-full flex items-center justify-center text-white text-4xl font-bold mx-auto mb-4">
+    <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-3xl p-10 w-full max-w-md text-center shadow-large">
+        <div className="mb-8">
+          <div className="w-28 h-28 bg-gradient-to-br from-primary-400 to-primary-600 rounded-full flex items-center justify-center text-white text-4xl font-semibold mx-auto mb-6 shadow-medium">
             {recipientName.charAt(0).toUpperCase()}
           </div>
-          <h2 className="text-2xl font-bold text-white mb-2">{recipientName}</h2>
-          <p className="text-gray-400">
-            {callStatus === 'calling' && (isCaller ? 'Memanggil...' : 'Panggilan masuk...')}
+          <h2 className="text-2xl font-semibold text-neutral-900 mb-2">{recipientName}</h2>
+          <p className="text-neutral-500">
+            {callStatus === 'calling' && (isCaller ? 'Calling...' : 'Incoming call...')}
             {callStatus === 'connected' && (
-              <span className="text-green-400 font-mono text-lg">{formatDuration(callDuration)}</span>
+              <span className="text-emerald-600 font-mono text-xl font-medium">{formatDuration(callDuration)}</span>
             )}
-            {callStatus === 'ended' && 'Panggilan berakhir'}
+            {callStatus === 'ended' && 'Call ended'}
           </p>
         </div>
 
@@ -469,36 +468,34 @@ const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
         <div className="flex gap-4 justify-center">
           {callStatus === 'calling' && !isCaller && !isCallAccepted && (
             <>
-              <Button 
+              <button 
                 onClick={handleRejectCall}
-                variant="danger"
-                className="rounded-full w-16 h-16 flex items-center justify-center"
+                className="rounded-full w-16 h-16 flex items-center justify-center bg-red-500 hover:bg-red-600 text-white transition-all duration-200 shadow-soft"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
-              </Button>
-              <Button 
+              </button>
+              <button 
                 onClick={handleAcceptCall}
-                className="rounded-full w-16 h-16 flex items-center justify-center bg-green-600 hover:bg-green-700"
+                className="rounded-full w-16 h-16 flex items-center justify-center bg-emerald-500 hover:bg-emerald-600 text-white transition-all duration-200 shadow-soft"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                 </svg>
-              </Button>
+              </button>
             </>
           )}
           
           {callStatus === 'calling' && !isCaller && isCallAccepted && (
-            <div className="text-gray-400 animate-pulse">Menghubungkan...</div>
+            <div className="text-neutral-400 animate-pulse text-sm">Connecting...</div>
           )}
 
           {(callStatus === 'connected' || (callStatus === 'calling' && isCaller)) && (
             <>
-              <Button
+              <button
                 onClick={handleToggleMute}
-                variant="secondary"
-                className="rounded-full w-16 h-16 flex items-center justify-center"
+                className="rounded-full w-16 h-16 flex items-center justify-center bg-neutral-100 hover:bg-neutral-200 text-neutral-700 transition-all duration-200 shadow-soft"
               >
                 {isMuted ? (
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -510,16 +507,15 @@ const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
                   </svg>
                 )}
-              </Button>
-              <Button
+              </button>
+              <button
                 onClick={handleEndCall}
-                variant="danger"
-                className="rounded-full w-16 h-16 flex items-center justify-center"
+                className="rounded-full w-16 h-16 flex items-center justify-center bg-red-500 hover:bg-red-600 text-white transition-all duration-200 shadow-soft"
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 8l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2M5 3a2 2 0 00-2 2v1c0 8.284 6.716 15 15 15h1a2 2 0 002-2v-3.28a1 1 0 00-.684-.948l-4.493-1.498a1 1 0 00-1.21.502l-1.13 2.257a11.042 11.042 0 01-5.516-5.517l2.257-1.128a1 1 0 00.502-1.21L9.228 3.683A1 1 0 008.279 3H5z" />
                 </svg>
-              </Button>
+              </button>
             </>
           )}
         </div>

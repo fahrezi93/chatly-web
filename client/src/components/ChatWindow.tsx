@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
 import Avatar from './Avatar';
-import Button from './Button';
 import { Message, User } from '../types';
 import { 
   requestNotificationPermission, 
