@@ -4,13 +4,17 @@ export interface User {
   email: string;
   isOnline: boolean;
   lastSeen: Date;
+  profilePicture?: string;
+  bio?: string;
+  status?: string;
 }
 
 export interface Message {
   _id?: string;
   id?: string;
   senderId: string;
-  receiverId: string;
+  receiverId?: string;
+  groupId?: string;
   content: string;
   createdAt: Date;
   isRead?: boolean;
@@ -19,6 +23,22 @@ export interface Message {
   fileUrl?: string;
   fileName?: string;
   fileType?: string;
+  replyTo?: Message | string;
+  deletedFor?: string[];
+  deletedForEveryone?: boolean;
+  sender?: User;
+}
+
+export interface Group {
+  _id: string;
+  name: string;
+  description?: string;
+  groupPicture?: string;
+  creator: User | string;
+  admins: (User | string)[];
+  members: (User | string)[];
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface AuthResponse {

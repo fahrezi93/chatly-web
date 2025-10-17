@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
 import Avatar from './Avatar';
-import { Message, User } from '../types';
+import { Message, User, Group } from '../types';
 import { 
   requestNotificationPermission, 
   showNotification, 
@@ -14,18 +14,24 @@ import { useSocket } from '../context/SocketContext';
 
 interface ChatWindowProps {
   recipientId: string;
+  groupId?: string;
   currentUserId: string;
   recipient: User | null;
+  group?: Group | null;
   onStartCall: (recipientId: string) => void;
+  viewMode?: 'chat' | 'group';
 }
 
 const API_URL = 'http://localhost:5000';
 
 const ChatWindow: React.FC<ChatWindowProps> = ({ 
   recipientId, 
+  groupId = '',
   currentUserId, 
   recipient,
-  onStartCall 
+  group = null,
+  onStartCall,
+  viewMode = 'chat'
 }) => {
   const { socket } = useSocket();
   const [messages, setMessages] = useState<Message[]>([]);

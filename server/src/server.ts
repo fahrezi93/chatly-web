@@ -12,6 +12,7 @@ import fs from 'fs';
 import User from './models/User';
 import Message from './models/Message';
 import CallHistory from './models/CallHistory';
+import Group from './models/Group';
 
 dotenv.config();
 
@@ -247,6 +248,284 @@ app.post('/api/upload', upload.single('file'), async (req: Request, res: Respons
   }
 });
 
+// ============ Profile & User Management Routes ============
+
+// Get user profile
+app.get('/api/users/:userId', async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+    const user = await User.findById(userId, { password: 0 });
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json(user);
+  } catch (error) {
+    console.error('Get user error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Update user profile
+app.put('/api/users/:userId', upload.single('profilePicture'), async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+    const { username, bio, status } = req.body;
+
+    const updateData: any = {};
+    if (username) updateData.username = username;
+    if (bio !== undefined) updateData.bio = bio;
+    if (status !== undefined) updateData.status = status;
+
+    // Handle profile picture upload
+    if (req.file) {
+      updateData.profilePicture = `/uploads/${req.file.filename}`;
+    }
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      updateData,
+      { new: true, select: '-password' }
+    );
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json(user);
+  } catch (error) {
+    console.error('Update profile error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Delete message
+app.delete('/api/messages/:messageId', async (req: Request, res: Response) => {
+  try {
+    const { messageId } = req.params;
+    const { userId, deleteForEveryone } = req.body;
+
+    const message = await Message.findById(messageId);
+    if (!message) {
+      return res.status(404).json({ message: 'Message not found' });
+    }
+
+    if (deleteForEveryone && message.senderId.toString() === userId) {
+      // Delete for everyone
+      message.deletedForEveryone = true;
+      await message.save();
+    } else {
+      // Delete for self only
+      if (!message.deletedFor) {
+        message.deletedFor = [];
+      }
+      if (!message.deletedFor.includes(userId)) {
+        message.deletedFor.push(userId);
+      }
+      await message.save();
+    }
+
+    res.json({ success: true, message });
+  } catch (error) {
+    console.error('Delete message error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// ============ Group Chat Routes ============
+
+// Create group
+app.post('/api/groups', async (req: Request, res: Response) => {
+  try {
+    const { name, description, creator, members } = req.body;
+    
+    const Group = mongoose.model('Group');
+    const group = new Group({
+      name,
+      description,
+      creator,
+      admins: [creator],
+      members: [...members, creator]
+    });
+
+    await group.save();
+    const populatedGroup = await Group.findById(group._id)
+      .populate('creator', '-password')
+      .populate('admins', '-password')
+      .populate('members', '-password');
+
+    res.status(201).json(populatedGroup);
+  } catch (error) {
+    console.error('Create group error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get user groups
+app.get('/api/groups/user/:userId', async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+    const Group = mongoose.model('Group');
+    
+    const groups = await Group.find({ members: userId })
+      .populate('creator', '-password')
+      .populate('admins', '-password')
+      .populate('members', '-password')
+      .sort({ updatedAt: -1 });
+
+    res.json(groups);
+  } catch (error) {
+    console.error('Get groups error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get group by ID
+app.get('/api/groups/:groupId', async (req: Request, res: Response) => {
+  try {
+    const { groupId } = req.params;
+    const Group = mongoose.model('Group');
+    
+    const group = await Group.findById(groupId)
+      .populate('creator', '-password')
+      .populate('admins', '-password')
+      .populate('members', '-password');
+
+    if (!group) {
+      return res.status(404).json({ message: 'Group not found' });
+    }
+
+    res.json(group);
+  } catch (error) {
+    console.error('Get group error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Get group messages
+app.get('/api/groups/:groupId/messages', async (req: Request, res: Response) => {
+  try {
+    const { groupId } = req.params;
+
+    const messages = await Message.find({ groupId })
+      .populate('senderId', '-password')
+      .populate('replyTo')
+      .sort({ createdAt: 1 });
+
+    res.json(messages);
+  } catch (error) {
+    console.error('Get group messages error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Add member to group
+app.post('/api/groups/:groupId/members', async (req: Request, res: Response) => {
+  try {
+    const { groupId } = req.params;
+    const { userId, addedBy } = req.body;
+    const Group = mongoose.model('Group');
+
+    const group: any = await Group.findById(groupId);
+    if (!group) {
+      return res.status(404).json({ message: 'Group not found' });
+    }
+
+    // Check if addedBy is admin
+    if (!group.admins.includes(addedBy)) {
+      return res.status(403).json({ message: 'Only admins can add members' });
+    }
+
+    // Add member if not already in group
+    if (!group.members.includes(userId)) {
+      group.members.push(userId);
+      await group.save();
+    }
+
+    const updatedGroup = await Group.findById(groupId)
+      .populate('creator', '-password')
+      .populate('admins', '-password')
+      .populate('members', '-password');
+
+    res.json(updatedGroup);
+  } catch (error) {
+    console.error('Add member error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Remove member from group
+app.delete('/api/groups/:groupId/members/:userId', async (req: Request, res: Response) => {
+  try {
+    const { groupId, userId } = req.params;
+    const { removedBy } = req.body;
+    const Group = mongoose.model('Group');
+
+    const group: any = await Group.findById(groupId);
+    if (!group) {
+      return res.status(404).json({ message: 'Group not found' });
+    }
+
+    // Check if removedBy is admin or user is removing themselves
+    if (!group.admins.includes(removedBy) && removedBy !== userId) {
+      return res.status(403).json({ message: 'Unauthorized' });
+    }
+
+    group.members = group.members.filter((m: any) => m.toString() !== userId);
+    group.admins = group.admins.filter((a: any) => a.toString() !== userId);
+    await group.save();
+
+    const updatedGroup = await Group.findById(groupId)
+      .populate('creator', '-password')
+      .populate('admins', '-password')
+      .populate('members', '-password');
+
+    res.json(updatedGroup);
+  } catch (error) {
+    console.error('Remove member error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Update group
+app.put('/api/groups/:groupId', upload.single('groupPicture'), async (req: Request, res: Response) => {
+  try {
+    const { groupId } = req.params;
+    const { name, description, updatedBy } = req.body;
+    const Group = mongoose.model('Group');
+
+    const group: any = await Group.findById(groupId);
+    if (!group) {
+      return res.status(404).json({ message: 'Group not found' });
+    }
+
+    // Check if updatedBy is admin
+    if (!group.admins.includes(updatedBy)) {
+      return res.status(403).json({ message: 'Only admins can update group' });
+    }
+
+    const updateData: any = {};
+    if (name) updateData.name = name;
+    if (description !== undefined) updateData.description = description;
+    if (req.file) updateData.groupPicture = `/uploads/${req.file.filename}`;
+
+    const updatedGroup = await Group.findByIdAndUpdate(
+      groupId,
+      updateData,
+      { new: true }
+    )
+      .populate('creator', '-password')
+      .populate('admins', '-password')
+      .populate('members', '-password');
+
+    res.json(updatedGroup);
+  } catch (error) {
+    console.error('Update group error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // ============ Socket.IO Events ============
 
 io.on('connection', (socket) => {
@@ -286,9 +565,10 @@ io.on('connection', (socket) => {
     fileUrl?: string;
     fileName?: string;
     fileType?: string;
+    replyTo?: string;
   }) => {
     try {
-      const { senderId, receiverId, content, messageType, fileUrl, fileName, fileType } = data;
+      const { senderId, receiverId, content, messageType, fileUrl, fileName, fileType, replyTo } = data;
 
       // Save message to database
       const message = new Message({
@@ -299,44 +579,171 @@ io.on('connection', (socket) => {
         messageType: messageType || 'text',
         fileUrl,
         fileName,
-        fileType
+        fileType,
+        replyTo: replyTo || null
       });
       await message.save();
+
+      // Populate replyTo if exists
+      let populatedMessage: any = message;
+      if (replyTo) {
+        populatedMessage = await Message.findById(message._id)
+          .populate('replyTo')
+          .populate('senderId', '-password');
+      }
 
       // Send to receiver if online
       const receiverSocketId = userSockets.get(receiverId);
       if (receiverSocketId) {
         io.to(receiverSocketId).emit('receive-message', {
-          id: message._id,
+          _id: populatedMessage._id,
+          id: populatedMessage._id,
           senderId,
           receiverId,
           content,
-          createdAt: message.createdAt,
+          createdAt: populatedMessage.createdAt,
           isRead: false,
           status: 'delivered',
-          messageType: message.messageType,
-          fileUrl: message.fileUrl,
-          fileName: message.fileName,
-          fileType: message.fileType
+          messageType: populatedMessage.messageType,
+          fileUrl: populatedMessage.fileUrl,
+          fileName: populatedMessage.fileName,
+          fileType: populatedMessage.fileType,
+          replyTo: populatedMessage.replyTo
         });
       }
 
       // Send confirmation back to sender
       socket.emit('message-sent', {
-        id: message._id,
+        _id: populatedMessage._id,
+        id: populatedMessage._id,
         senderId,
         receiverId,
         content,
-        createdAt: message.createdAt,
+        createdAt: populatedMessage.createdAt,
         isRead: false,
         status: receiverSocketId ? 'delivered' : 'sent',
-        messageType: message.messageType,
-        fileUrl: message.fileUrl,
-        fileName: message.fileName,
-        fileType: message.fileType
+        messageType: populatedMessage.messageType,
+        fileUrl: populatedMessage.fileUrl,
+        fileName: populatedMessage.fileName,
+        fileType: populatedMessage.fileType,
+        replyTo: populatedMessage.replyTo
       });
     } catch (error) {
       console.error('Private message error:', error);
+    }
+  });
+
+  // Group message
+  socket.on('group-message', async (data: {
+    senderId: string;
+    groupId: string;
+    content: string;
+    messageType?: string;
+    fileUrl?: string;
+    fileName?: string;
+    fileType?: string;
+    replyTo?: string;
+  }) => {
+    try {
+      const { senderId, groupId, content, messageType, fileUrl, fileName, fileType, replyTo } = data;
+
+      // Save message to database
+      const message = new Message({
+        senderId,
+        groupId,
+        content,
+        isRead: false,
+        messageType: messageType || 'text',
+        fileUrl,
+        fileName,
+        fileType,
+        replyTo: replyTo || null
+      });
+      await message.save();
+
+      // Populate sender and replyTo
+      const populatedMessage = await Message.findById(message._id)
+        .populate('senderId', '-password')
+        .populate('replyTo');
+
+      // Get group members
+      const group: any = await Group.findById(groupId);
+      if (group) {
+        // Send to all group members
+        group.members.forEach((memberId: any) => {
+          const memberSocketId = userSockets.get(memberId.toString());
+          if (memberSocketId) {
+            io.to(memberSocketId).emit('group-message-received', {
+              _id: populatedMessage._id,
+              id: populatedMessage._id,
+              senderId,
+              groupId,
+              content,
+              createdAt: populatedMessage.createdAt,
+              messageType: populatedMessage.messageType,
+              fileUrl: populatedMessage.fileUrl,
+              fileName: populatedMessage.fileName,
+              fileType: populatedMessage.fileType,
+              replyTo: populatedMessage.replyTo,
+              sender: populatedMessage.senderId
+            });
+          }
+        });
+      }
+    } catch (error) {
+      console.error('Group message error:', error);
+    }
+  });
+
+  // Delete message
+  socket.on('delete-message', async (data: {
+    messageId: string;
+    userId: string;
+    deleteForEveryone: boolean;
+    receiverId?: string;
+    groupId?: string;
+  }) => {
+    try {
+      const { messageId, userId, deleteForEveryone, receiverId, groupId } = data;
+      
+      const message = await Message.findById(messageId);
+      if (!message) return;
+
+      if (deleteForEveryone && message.senderId.toString() === userId) {
+        message.deletedForEveryone = true;
+        await message.save();
+
+        // Notify receiver or group members
+        if (receiverId) {
+          const receiverSocketId = userSockets.get(receiverId);
+          if (receiverSocketId) {
+            io.to(receiverSocketId).emit('message-deleted', { messageId, deleteForEveryone: true });
+          }
+        } else if (groupId) {
+          const group: any = await Group.findById(groupId);
+          if (group) {
+            group.members.forEach((memberId: any) => {
+              const memberSocketId = userSockets.get(memberId.toString());
+              if (memberSocketId && memberId.toString() !== userId) {
+                io.to(memberSocketId).emit('message-deleted', { messageId, deleteForEveryone: true });
+              }
+            });
+          }
+        }
+      } else {
+        // Delete for self only
+        if (!message.deletedFor) {
+          message.deletedFor = [];
+        }
+        if (!message.deletedFor.some((id: any) => id.toString() === userId)) {
+          message.deletedFor.push(userId as any);
+        }
+        await message.save();
+      }
+
+      socket.emit('message-delete-confirmed', { messageId, deleteForEveryone });
+    } catch (error) {
+      console.error('Delete message error:', error);
     }
   });
 

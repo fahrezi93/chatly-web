@@ -6,6 +6,9 @@ export interface IUser extends Document {
   password: string;
   isOnline: boolean;
   lastSeen: Date;
+  profilePicture?: string;
+  bio?: string;
+  status?: string;
 }
 
 const UserSchema: Schema = new Schema({
@@ -33,6 +36,20 @@ const UserSchema: Schema = new Schema({
   lastSeen: {
     type: Date,
     default: Date.now
+  },
+  profilePicture: {
+    type: String,
+    default: ''
+  },
+  bio: {
+    type: String,
+    default: '',
+    maxlength: 150
+  },
+  status: {
+    type: String,
+    default: 'Hey there! I am using Chat App',
+    maxlength: 100
   }
 }, {
   timestamps: true

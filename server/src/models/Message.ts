@@ -2,13 +2,17 @@ import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IMessage extends Document {
   senderId: mongoose.Types.ObjectId;
-  receiverId: mongoose.Types.ObjectId;
+  receiverId?: mongoose.Types.ObjectId;
+  groupId?: mongoose.Types.ObjectId;
   content: string;
   isRead: boolean;
   messageType: 'text' | 'image' | 'file';
   fileUrl?: string;
   fileName?: string;
   fileType?: string;
+  replyTo?: mongoose.Types.ObjectId;
+  deletedFor?: mongoose.Types.ObjectId[];
+  deletedForEveryone?: boolean;
   createdAt: Date;
 }
 
@@ -20,8 +24,11 @@ const MessageSchema: Schema = new Schema({
   },
   receiverId: {
     type: Schema.Types.ObjectId,
-    ref: 'User',
-    required: true
+    ref: 'User'
+  },
+  groupId: {
+    type: Schema.Types.ObjectId,
+    ref: 'Group'
   },
   content: {
     type: String,
@@ -44,6 +51,18 @@ const MessageSchema: Schema = new Schema({
   },
   fileType: {
     type: String
+  },
+  replyTo: {
+    type: Schema.Types.ObjectId,
+    ref: 'Message'
+  },
+  deletedFor: [{
+    type: Schema.Types.ObjectId,
+    ref: 'User'
+  }],
+  deletedForEveryone: {
+    type: Boolean,
+    default: false
   }
 }, {
   timestamps: true
