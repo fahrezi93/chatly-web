@@ -34,13 +34,15 @@ const MessageItem: React.FC<MessageItemProps> = ({
   }, []);
 
   // Check if message is deleted
-  const isDeleted = message.deletedForEveryone || message.deletedFor?.includes(currentUserId);
+  const isDeletedForEveryone = message.deletedForEveryone === true;
+  const isDeletedForMe = Array.isArray(message.deletedFor) && message.deletedFor.includes(currentUserId);
+  const isDeleted = isDeletedForEveryone || isDeletedForMe;
 
   if (isDeleted) {
     return (
       <div className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'}`}>
         <div className="max-w-xs lg:max-w-md px-4 py-2 rounded-2xl bg-neutral-100 text-neutral-400 italic text-sm">
-          <p>This message was deleted</p>
+          <p>Pesan ini telah dihapus</p>
         </div>
       </div>
     );
@@ -59,7 +61,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
           : 'bg-neutral-100 border-neutral-300'
       }`}>
         <p className={`text-xs font-medium ${isOwnMessage ? 'text-white/90' : 'text-neutral-700'}`}>
-          Replying to
+          Membalas ke
         </p>
         <p className={`text-xs ${isOwnMessage ? 'text-white/70' : 'text-neutral-600'} truncate`}>
           {replyMsg.content}
@@ -147,10 +149,10 @@ const MessageItem: React.FC<MessageItemProps> = ({
           </div>
         </div>
 
-        {/* Message menu */}
+        {/* Message menu - Posisi: kiri untuk pesan sendiri, kanan untuk pesan orang */}
         <button
           onClick={() => setShowMenu(!showMenu)}
-          className="absolute -right-8 top-1/2 -translate-y-1/2 p-1.5 rounded-lg bg-white shadow-soft border border-neutral-200 text-neutral-600 hover:text-neutral-900 opacity-0 group-hover:opacity-100 transition-opacity"
+          className={`absolute ${isOwnMessage ? '-left-8' : '-right-8'} top-1/2 -translate-y-1/2 p-1.5 rounded-lg bg-white shadow-soft border border-neutral-200 text-neutral-600 hover:text-neutral-900 opacity-0 group-hover:opacity-100 transition-opacity`}
         >
           <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
             <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" />
@@ -161,7 +163,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
         {showMenu && (
           <div
             ref={menuRef}
-            className={`absolute ${isOwnMessage ? 'right-0' : 'left-0'} mt-1 w-48 bg-white rounded-lg shadow-large border border-neutral-100 py-1 z-50`}
+            className={`absolute ${isOwnMessage ? 'left-0' : 'right-0'} mt-1 w-48 bg-white rounded-lg shadow-large border border-neutral-100 py-1 z-50`}
           >
             <button
               onClick={() => {
@@ -173,7 +175,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
               </svg>
-              Reply
+              Balas
             </button>
 
             {isOwnMessage && (
@@ -187,7 +189,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                 </svg>
-                Delete
+                Hapus
               </button>
             )}
           </div>
@@ -197,9 +199,9 @@ const MessageItem: React.FC<MessageItemProps> = ({
         {showDeleteConfirm && (
           <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
             <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-large">
-              <h3 className="text-lg font-semibold text-neutral-900 mb-2">Delete Message?</h3>
+              <h3 className="text-lg font-semibold text-neutral-900 mb-2">Hapus Pesan?</h3>
               <p className="text-sm text-neutral-600 mb-6">
-                Choose who you want to delete this message for.
+                Pilih untuk siapa Anda ingin menghapus pesan ini.
               </p>
               
               <div className="space-y-2">
@@ -210,7 +212,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
                   }}
                   className="w-full px-4 py-2 text-sm text-neutral-700 bg-neutral-100 hover:bg-neutral-200 rounded-lg transition-colors"
                 >
-                  Delete for me
+                  Hapus untuk saya
                 </button>
                 <button
                   onClick={() => {
@@ -219,13 +221,13 @@ const MessageItem: React.FC<MessageItemProps> = ({
                   }}
                   className="w-full px-4 py-2 text-sm text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors"
                 >
-                  Delete for everyone
+                  Hapus untuk semua orang
                 </button>
                 <button
                   onClick={() => setShowDeleteConfirm(false)}
                   className="w-full px-4 py-2 text-sm text-neutral-600 hover:bg-neutral-50 rounded-lg transition-colors"
                 >
-                  Cancel
+                  Batal
                 </button>
               </div>
             </div>

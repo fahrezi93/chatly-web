@@ -666,6 +666,11 @@ io.on('connection', (socket) => {
         .populate('senderId', '-password')
         .populate('replyTo');
 
+      if (!populatedMessage) {
+        console.error('Failed to populate message');
+        return;
+      }
+
       // Get group members
       const group: any = await Group.findById(groupId);
       if (group) {
