@@ -76,7 +76,11 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     if (!socket) return;
 
     socket.on('receive-message', (message: Message) => {
-      if (message.senderId === recipientId) {
+      const messageSenderId = typeof message.senderId === 'object' && message.senderId && '_id' in message.senderId
+        ? message.senderId._id
+        : message.senderId;
+        
+      if (messageSenderId === recipientId) {
         setMessages((prev) => [...prev, message]);
         
         // Show notification if window is not focused
@@ -85,17 +89,17 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             `Pesan baru dari ${recipient.username}`,
             {
               body: message.content,
-              tag: message.senderId
+              tag: messageSenderId
             }
           );
           playNotificationSound();
           incrementUnreadCount(recipientId);
         }
-      } else if (message.senderId !== currentUserId) {
+      } else if (messageSenderId !== currentUserId) {
         // Message from other user (not current chat)
         // Still increment unread and play sound
         playNotificationSound();
-        incrementUnreadCount(message.senderId);
+        incrementUnreadCount(messageSenderId);
       }
     });
 
@@ -449,16 +453,17 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           ) : null}
         </div>
         
-        {viewMode === 'group' ? (
+        {/* Action buttons - Voice call only for private chat, Group info for group */}
+        {group && viewMode === 'group' ? (
           <button
             className="p-2 text-neutral-600 hover:bg-neutral-100 rounded-lg transition-all duration-200"
-            title="Group Info"
+            title="Info Grup"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </button>
-        ) : (
+        ) : recipient ? (
           <button
             onClick={() => onStartCall(recipientId)}
             className="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-all duration-200 flex items-center gap-2 text-sm font-medium shadow-soft"
@@ -468,21 +473,29 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             </svg>
             <span className="hidden sm:inline">Voice Call</span>
           </button>
-        )}
+        ) : null}
       </div>
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-6 space-y-3 bg-neutral-50">
-        {messages.map((message, index) => (
-          <MessageItem
-            key={message._id || message.id || index}
-            message={message}
-            isOwnMessage={message.senderId === currentUserId}
-            currentUserId={currentUserId}
-            onReply={handleReply}
-            onDelete={handleDelete}
-          />
-        ))}
+        {messages.map((message, index) => {
+          // Determine if message.senderId is a string or object
+          const messageSenderId = typeof message.senderId === 'object' && message.senderId && '_id' in message.senderId
+            ? message.senderId._id
+            : message.senderId;
+          
+          return (
+            <MessageItem
+              key={message._id || message.id || index}
+              message={message}
+              isOwnMessage={messageSenderId === currentUserId}
+              currentUserId={currentUserId}
+              onReply={handleReply}
+              onDelete={handleDelete}
+              showSenderName={viewMode === 'group'} // Show sender name in group chats
+            />
+          );
+        })}
         <div ref={messagesEndRef} />
       </div>
 

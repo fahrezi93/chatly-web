@@ -267,7 +267,11 @@ const ChatPage: React.FC = () => {
           {/* Tab Switcher */}
           <div className="flex border-b border-neutral-200">
             <button
-              onClick={() => setViewMode('chat')}
+              onClick={() => {
+                setViewMode('chat');
+                // Reset group selection saat switch ke Chats
+                setSelectedGroupId(null);
+              }}
               className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
                 viewMode === 'chat'
                   ? 'text-primary-600 border-b-2 border-primary-600'
@@ -277,7 +281,11 @@ const ChatPage: React.FC = () => {
               Chats
             </button>
             <button
-              onClick={() => setViewMode('group')}
+              onClick={() => {
+                setViewMode('group');
+                // Reset chat selection saat switch ke Groups
+                setSelectedUserId(null);
+              }}
               className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
                 viewMode === 'group'
                   ? 'text-primary-600 border-b-2 border-primary-600'

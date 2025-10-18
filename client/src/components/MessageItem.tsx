@@ -7,6 +7,7 @@ interface MessageItemProps {
   currentUserId: string;
   onReply: (message: Message) => void;
   onDelete: (messageId: string, deleteForEveryone: boolean) => void;
+  showSenderName?: boolean; // For group chats
 }
 
 const API_URL = 'http://localhost:5000';
@@ -16,7 +17,8 @@ const MessageItem: React.FC<MessageItemProps> = ({
   isOwnMessage,
   currentUserId,
   onReply,
-  onDelete
+  onDelete,
+  showSenderName = false
 }) => {
   const [showMenu, setShowMenu] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -80,6 +82,17 @@ const MessageItem: React.FC<MessageItemProps> = ({
               : 'bg-white text-neutral-900 shadow-soft border border-neutral-100'
           }`}
         >
+          {/* Sender name for group chats (only show for others' messages) */}
+          {showSenderName && !isOwnMessage && (
+            <div className="px-4 pt-2 pb-1">
+              <p className="text-xs font-semibold text-primary-600">
+                {typeof message.senderId === 'object' && message.senderId && 'username' in message.senderId
+                  ? message.senderId.username 
+                  : 'Pengguna'}
+              </p>
+            </div>
+          )}
+          
           {renderReplyPreview()}
           
           {/* Image message */}

@@ -682,7 +682,7 @@ io.on('connection', (socket) => {
             io.to(memberSocketId).emit('group-message-received', {
               _id: populatedMessage._id,
               id: populatedMessage._id,
-              senderId,
+              senderId: populatedMessage.senderId, // Already populated with user object
               groupId,
               content,
               createdAt: populatedMessage.createdAt,
@@ -690,8 +690,7 @@ io.on('connection', (socket) => {
               fileUrl: populatedMessage.fileUrl,
               fileName: populatedMessage.fileName,
               fileType: populatedMessage.fileType,
-              replyTo: populatedMessage.replyTo,
-              sender: populatedMessage.senderId
+              replyTo: populatedMessage.replyTo
             });
           }
         });

@@ -12,7 +12,7 @@ export interface User {
 export interface Message {
   _id?: string;
   id?: string;
-  senderId: string;
+  senderId: string | User; // Can be populated
   receiverId?: string;
   groupId?: string;
   content: string;
@@ -26,7 +26,7 @@ export interface Message {
   replyTo?: Message | string;
   deletedFor?: string[];
   deletedForEveryone?: boolean;
-  sender?: User;
+  sender?: User; // Deprecated, use senderId when populated
 }
 
 export interface Group {
