@@ -98,6 +98,12 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, user, onClose, onUp
                   src={previewUrl.startsWith('blob:') || previewUrl.startsWith('data:') ? previewUrl : `${API_URL}${previewUrl}`}
                   alt="Profile"
                   className="w-24 h-24 rounded-full object-cover shadow-soft"
+                  onError={(e) => {
+                    console.error('Profile image load error:', previewUrl);
+                    // Fallback to Avatar component
+                    (e.target as HTMLImageElement).style.display = 'none';
+                  }}
+                  crossOrigin="anonymous"
                 />
               ) : (
                 <Avatar username={username} size="lg" />

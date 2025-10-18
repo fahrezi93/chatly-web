@@ -400,6 +400,42 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     }
   };
 
+  const handlePin = async (messageId: string) => {
+    try {
+      // Update local state to mark message as pinned
+      setMessages(prev => 
+        prev.map(msg => {
+          if (msg._id === messageId || msg.id === messageId) {
+            return { ...msg, isPinned: !msg.isPinned };
+          }
+          return msg;
+        })
+      );
+
+      // Call API to pin/unpin message
+      await axios.post(`${API_URL}/api/messages/${messageId}/pin`, {
+        userId: currentUserId
+      });
+      
+      // Emit socket event to notify other users
+      socket?.emit('pin-message', {
+        messageId,
+        userId: currentUserId
+      });
+    } catch (error) {
+      console.error('Error pinning message:', error);
+      // Revert on error
+      setMessages(prev => 
+        prev.map(msg => {
+          if (msg._id === messageId || msg.id === messageId) {
+            return { ...msg, isPinned: !msg.isPinned };
+          }
+          return msg;
+        })
+      );
+    }
+  };
+
   if (!recipient && !group) {
     return (
       <div className="flex-1 bg-neutral-50 flex items-center justify-center">
@@ -492,6 +528,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               currentUserId={currentUserId}
               onReply={handleReply}
               onDelete={handleDelete}
+              onPin={handlePin}
               showSenderName={viewMode === 'group'} // Show sender name in group chats
             />
           );

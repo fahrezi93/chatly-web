@@ -9,6 +9,7 @@ import jwt from 'jsonwebtoken';
 import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
+import { fileURLToPath } from 'url';
 import User from './models/User';
 import Message from './models/Message';
 import CallHistory from './models/CallHistory';
@@ -18,6 +19,9 @@ dotenv.config();
 
 const app = express();
 const server = http.createServer(app);
+
+// Get the directory path for uploads (works with both TS and compiled JS)
+const uploadsDir = path.join(process.cwd(), 'server', 'uploads');
 const io = new Server(server, {
   cors: {
     origin: 'http://localhost:5173',
@@ -29,17 +33,16 @@ const io = new Server(server, {
 app.use(cors());
 app.use(express.json());
 
-// Serve uploaded files
-app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+// Serve uploaded files - Use absolute path
+app.use('/uploads', express.static(uploadsDir));
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const uploadDir = path.join(__dirname, '../uploads');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
     }
-    cb(null, uploadDir);
+    cb(null, uploadsDir);
   },
   filename: (req, file, cb) => {
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -66,7 +69,11 @@ const upload = multer({
 // MongoDB Connection
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/chat-app';
 mongoose.connect(MONGODB_URI)
-  .then(() => console.log('✅ Connected to MongoDB'))
+  .then(() => {
+    console.log('✅ Connected to MongoDB');
+    console.log('📁 Uploads directory:', uploadsDir);
+    console.log('📁 Directory exists:', fs.existsSync(uploadsDir));
+  })
   .catch((err) => console.error('❌ MongoDB connection error:', err));
 
 // JWT Secret
@@ -330,6 +337,27 @@ app.delete('/api/messages/:messageId', async (req: Request, res: Response) => {
     res.json({ success: true, message });
   } catch (error) {
     console.error('Delete message error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Pin/Unpin message
+app.post('/api/messages/:messageId/pin', async (req: Request, res: Response) => {
+  try {
+    const { messageId } = req.params;
+
+    const message = await Message.findById(messageId);
+    if (!message) {
+      return res.status(404).json({ message: 'Message not found' });
+    }
+
+    // Toggle pin status
+    message.isPinned = !message.isPinned;
+    await message.save();
+
+    res.json({ success: true, message });
+  } catch (error) {
+    console.error('Pin message error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });

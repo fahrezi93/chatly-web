@@ -13,6 +13,7 @@ export interface IMessage extends Document {
   replyTo?: mongoose.Types.ObjectId;
   deletedFor?: mongoose.Types.ObjectId[];
   deletedForEveryone?: boolean;
+  isPinned?: boolean;
   createdAt: Date;
 }
 
@@ -61,6 +62,10 @@ const MessageSchema: Schema = new Schema({
     ref: 'User'
   }],
   deletedForEveryone: {
+    type: Boolean,
+    default: false
+  },
+  isPinned: {
     type: Boolean,
     default: false
   }

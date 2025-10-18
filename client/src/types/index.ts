@@ -26,6 +26,7 @@ export interface Message {
   replyTo?: Message | string;
   deletedFor?: string[];
   deletedForEveryone?: boolean;
+  isPinned?: boolean;
   sender?: User; // Deprecated, use senderId when populated
 }
 
