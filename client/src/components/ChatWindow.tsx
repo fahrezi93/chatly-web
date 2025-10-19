@@ -67,6 +67,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const [uploading, setUploading] = useState(false);
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messageRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const isWindowFocused = useRef(true);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const otherUserTypingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -274,7 +275,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           }
         }
       } catch (error) {
-        console.error('Error loading messages:', error);
+        // Error loading messages
       }
     };
 
@@ -351,7 +352,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         fileType: mimetype
       });
     } catch (error) {
-      console.error('Upload error:', error);
       alert('Gagal mengupload file');
     } finally {
       setUploading(false);
@@ -437,7 +437,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         deleteForEveryone
       });
     } catch (error) {
-      console.error('Error deleting message:', error);
       // Revert on error
       setMessages(prev => 
         prev.map(msg => {
@@ -478,7 +477,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         userId: currentUserId
       });
     } catch (error) {
-      console.error('Error pinning message:', error);
       // Revert on error
       setMessages(prev => 
         prev.map(msg => {
@@ -490,6 +488,21 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       );
     }
   };
+
+  const scrollToMessage = (messageId: string) => {
+    const element = messageRefs.current[messageId];
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Add highlight effect
+      element.classList.add('highlight-message');
+      setTimeout(() => {
+        element.classList.remove('highlight-message');
+      }, 2000);
+    }
+  };
+
+  // Get pinned messages
+  const pinnedMessages = messages.filter(msg => msg.isPinned);
 
   if (!recipient && !group) {
     return (
@@ -571,6 +584,34 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         ) : null}
       </div>
 
+      {/* Pinned Message Banner */}
+      {pinnedMessages.length > 0 && (
+        <div className="bg-amber-50 border-b border-amber-200 px-3 md:px-6 py-2.5 flex-shrink-0">
+          <div 
+            onClick={() => scrollToMessage(pinnedMessages[0]._id || pinnedMessages[0].id || '')}
+            className="flex items-center gap-2 cursor-pointer hover:bg-amber-100 p-2 rounded-lg transition-colors"
+          >
+            <svg className="w-4 h-4 text-amber-600 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+            </svg>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold text-amber-800 mb-0.5">Pesan Tersemat</p>
+              <p className="text-sm text-amber-900 truncate">
+                {pinnedMessages[0].content}
+              </p>
+            </div>
+            {pinnedMessages.length > 1 && (
+              <span className="px-2 py-0.5 bg-amber-200 text-amber-800 text-xs font-medium rounded-full flex-shrink-0">
+                +{pinnedMessages.length - 1}
+              </span>
+            )}
+            <svg className="w-4 h-4 text-amber-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </div>
+        </div>
+      )}
+
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-3 md:p-6 space-y-3 bg-neutral-50">
         {messages.map((message, index) => {
@@ -582,6 +623,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           return (
             <MessageItem
               key={message._id || message.id || index}
+              ref={(el) => {
+                const msgId = message._id || message.id || '';
+                if (msgId) messageRefs.current[msgId] = el;
+              }}
               message={message}
               isOwnMessage={messageSenderId === currentUserId}
               currentUserId={currentUserId}

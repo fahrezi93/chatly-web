@@ -99,8 +99,6 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, user, onClose, onUp
                   alt="Profile"
                   className="w-20 h-20 md:w-24 md:h-24 rounded-full object-cover shadow-soft"
                   onError={(e) => {
-                    console.error('Profile image load error:', previewUrl);
-                    // Fallback to Avatar component
                     (e.target as HTMLImageElement).style.display = 'none';
                   }}
                   crossOrigin="anonymous"

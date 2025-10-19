@@ -2,6 +2,24 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer utilities {
+  .highlight-message {
+    animation: highlight 2s ease-in-out;
+  }
+  
+  @keyframes highlight {
+    0% {
+      background-color: rgba(251, 191, 36, 0.3);
+    }
+    50% {
+      background-color: rgba(251, 191, 36, 0.5);
+    }
+    100% {
+      background-color: transparent;
+    }
+  }
+}
+
 body {
   margin: 0;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;

@@ -46,7 +46,7 @@ const CallHistory: React.FC<CallHistoryProps> = ({ currentUserId, onClose }) => 
       const response = await axios.get(`${API_URL}/api/call-history/${currentUserId}`);
       setCallHistory(response.data);
     } catch (error) {
-      console.error('Error loading call history:', error);
+      // Error loading call history
     } finally {
       setLoading(false);
     }

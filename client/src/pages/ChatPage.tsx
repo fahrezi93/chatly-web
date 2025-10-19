@@ -62,19 +62,13 @@ const ChatPage: React.FC = () => {
 
     // Only proceed if socket is ready
     if (!socket || !isConnected) {
-      console.log('⏳ Waiting for socket connection...');
       return;
     }
 
-    console.log('🎯 Setting up socket listeners for user:', userId);
-
     // Emit user-connected event only once
     if (!hasEmittedUserConnected.current) {
-      console.log('📡 Emitting user-connected for:', userId);
       socket.emit('user-connected', userId);
       hasEmittedUserConnected.current = true;
-    } else {
-      console.log('⏭️ Skipping user-connected (already emitted)');
     }
 
     // Listen for user status changes
@@ -90,8 +84,6 @@ const ChatPage: React.FC = () => {
 
     // Listen for incoming calls
     const handleIncomingCall = ({ callerId, offer, callId: incomingCallId }: { callerId: string; offer: RTCSessionDescriptionInit; callId?: string }) => {
-      console.log('🔔 Incoming call from:', callerId);
-      console.log('📦 Storing offer for processing in modal');
       setCallRecipientId(callerId);
       setIncomingOffer(offer);
       setCallId(incomingCallId || null);
@@ -109,7 +101,6 @@ const ChatPage: React.FC = () => {
 
     // Cleanup listeners on unmount
     return () => {
-      console.log('🧹 Removing socket listeners');
       socket.off('user-status-changed', handleUserStatusChanged);
       socket.off('incoming-call', handleIncomingCall);
     };
@@ -120,7 +111,7 @@ const ChatPage: React.FC = () => {
       const response = await axios.get(`${API_URL}/api/users/${userId}`);
       setCurrentUser(response.data);
     } catch (error) {
-      console.error('Error loading current user:', error);
+      // Error loading user
     }
   };
 
@@ -129,7 +120,7 @@ const ChatPage: React.FC = () => {
       const response = await axios.get(`${API_URL}/api/users`);
       setContacts(response.data);
     } catch (error) {
-      console.error('Error loading contacts:', error);
+      // Error loading contacts
     }
   };
 
@@ -138,7 +129,7 @@ const ChatPage: React.FC = () => {
       const response = await axios.get(`${API_URL}/api/groups/user/${userId}`);
       setGroups(response.data);
     } catch (error) {
-      console.error('Error loading groups:', error);
+      // Error loading groups
     }
   };
 
@@ -150,7 +141,7 @@ const ChatPage: React.FC = () => {
       );
       setMissedCallsCount(missedCalls.length);
     } catch (error) {
-      console.error('Error loading missed calls:', error);
+      // Error loading missed calls
     }
   };
 

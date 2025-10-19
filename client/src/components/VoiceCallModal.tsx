@@ -58,17 +58,13 @@ const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
     // Store callId from props
     if (callId) {
       callIdRef.current = callId;
-      console.log('📝 Stored callId:', callId);
     }
 
     const initCall = async () => {
       try {
-        console.log('🎙️ Initializing call...', { isCaller, currentUserId, recipientId });
-        
         // Get user media (audio only)
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
         localStreamRef.current = stream;
-        console.log('✅ Got local media stream');
 
         // Create peer connection
         const peerConnection = new RTCPeerConnection({
@@ -78,67 +74,53 @@ const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
           ]
         });
         peerConnectionRef.current = peerConnection;
-        console.log('✅ Created peer connection');
 
         // Add local stream tracks to peer connection
         stream.getTracks().forEach(track => {
           peerConnection.addTrack(track, stream);
         });
-        console.log('✅ Added local tracks to peer connection');
 
         // Handle incoming tracks
         peerConnection.ontrack = (event) => {
-          console.log('📥 Received remote track');
           if (remoteAudioRef.current && event.streams[0]) {
             remoteAudioRef.current.srcObject = event.streams[0];
             setCallStatus('connected');
-            console.log('✅ Connected! Playing remote audio');
           }
         };
 
         // Handle ICE connection state changes
         peerConnection.oniceconnectionstatechange = () => {
-          console.log('🧊 ICE connection state:', peerConnection.iceConnectionState);
           if (peerConnection.iceConnectionState === 'connected') {
             setCallStatus('connected');
           } else if (peerConnection.iceConnectionState === 'failed' || 
                      peerConnection.iceConnectionState === 'disconnected') {
-            console.error('❌ Connection failed or disconnected');
+            // Connection failed
           }
         };
 
         // Handle ICE candidates
         peerConnection.onicecandidate = (event) => {
           if (event.candidate) {
-            console.log('🧊 Sending ICE candidate to:', recipientId);
             socket.emit('ice-candidate', {
               targetUserId: recipientId,
               senderId: currentUserId,
               candidate: event.candidate
             });
-          } else {
-            console.log('✅ All ICE candidates sent');
           }
         };
 
         // If caller, create offer
         if (isCaller) {
-          console.log('📞 Creating offer to call:', recipientId);
           const offer = await peerConnection.createOffer();
           await peerConnection.setLocalDescription(offer);
           
-          console.log('📤 Emitting call-user event with offer');
           socket.emit('call-user', {
             callerId: currentUserId,
             receiverId: recipientId,
             offer: offer
           });
-        } else {
-          console.log('👂 Receiver mode - waiting for user to accept call');
-          // Don't process offer automatically - wait for user to click Accept button
         }
       } catch (error) {
-        console.error('❌ Error initializing call:', error);
         showNotification(
           'Akses Mikrofon Ditolak',
           'Tidak dapat mengakses mikrofon. Pastikan izin untuk menggunakan mikrofon telah diberikan di pengaturan browser Anda.',
@@ -151,41 +133,32 @@ const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
 
     // Socket event listeners
     const handleIncomingCallOffer = async (data: { callerId: string; offer: RTCSessionDescriptionInit }) => {
-      console.log('📞 Received incoming call offer from:', data.callerId);
-      
       // Prevent processing the same offer twice
       if (hasProcessedOfferRef.current) {
-        console.log('⏭️ Offer already processed, skipping');
         return;
       }
       
       // Only handle if we are receiver and offer is from the expected caller
       if (!peerConnectionRef.current) {
-        console.error('❌ Peer connection not ready');
         return;
       }
       
       if (isCaller) {
-        console.log('⚠️ Ignoring offer - we are the caller');
         return;
       }
       
       if (data.callerId !== recipientId) {
-        console.log('⚠️ Ignoring offer - not from expected caller', { expected: recipientId, actual: data.callerId });
         return;
       }
       
       hasProcessedOfferRef.current = true;
       
       try {
-        console.log('🤝 Setting remote description from offer');
         await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(data.offer));
         
-        console.log('📝 Creating answer');
         const answer = await peerConnectionRef.current.createAnswer();
         await peerConnectionRef.current.setLocalDescription(answer);
         
-        console.log('📤 Sending answer back to caller');
         socket.emit('answer-call', {
           callerId: data.callerId,
           receiverId: currentUserId,
@@ -193,49 +166,35 @@ const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
         });
         
         // Process queued ICE candidates
-        console.log('🧊 Processing queued ICE candidates:', iceCandidatesQueueRef.current.length);
         for (const candidate of iceCandidatesQueueRef.current) {
           await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(candidate));
         }
         iceCandidatesQueueRef.current = [];
-        
-        console.log('✅ Answer sent successfully');
       } catch (error) {
-        console.error('❌ Error handling offer:', error);
         hasProcessedOfferRef.current = false; // Reset on error
       }
     };
 
     const handleCallAnswered = async (data: { receiverId: string; answer: RTCSessionDescriptionInit }) => {
-      console.log('📞 Call answered by:', data.receiverId);
-      
       if (!peerConnectionRef.current) {
-        console.error('❌ Peer connection not ready');
         return;
       }
       
       try {
-        console.log('🤝 Setting remote description from answer');
         await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(data.answer));
         
         // Process queued ICE candidates
-        console.log('🧊 Processing queued ICE candidates:', iceCandidatesQueueRef.current.length);
         for (const candidate of iceCandidatesQueueRef.current) {
           await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(candidate));
         }
         iceCandidatesQueueRef.current = [];
-        
-        console.log('✅ Remote description set, waiting for connection...');
       } catch (error) {
-        console.error('❌ Error handling call answer:', error);
+        // Error handling call answer
       }
     };
 
     const handleIceCandidate = async (data: { senderId: string; candidate: RTCIceCandidateInit }) => {
-      console.log('🧊 Received ICE candidate from:', data.senderId);
-      
       if (!peerConnectionRef.current) {
-        console.error('❌ Peer connection not ready');
         return;
       }
       
@@ -243,19 +202,16 @@ const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
         // Check if remote description is set
         if (peerConnectionRef.current.remoteDescription) {
           await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(data.candidate));
-          console.log('✅ ICE candidate added');
         } else {
           // Queue the candidate until remote description is set
-          console.log('⏳ Queueing ICE candidate (remote description not set yet)');
           iceCandidatesQueueRef.current.push(data.candidate);
         }
       } catch (error) {
-        console.error('❌ Error handling ICE candidate:', error);
+        // Error handling ICE candidate
       }
     };
 
     const handleCallEnded = () => {
-      console.log('📴 Call ended');
       setCallStatus('ended');
       setTimeout(() => {
         onClose();
@@ -263,7 +219,6 @@ const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
     };
 
     const handleCallRejected = () => {
-      console.log('❌ Call rejected');
       showNotification(
         'Panggilan Ditolak',
         `${recipientName} menolak panggilan Anda.`,
@@ -272,7 +227,6 @@ const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
     };
 
     const handleCallFailed = (data: { message: string }) => {
-      console.log('❌ Call failed:', data.message);
       showNotification(
         'Panggilan Gagal',
         data.message,
@@ -291,7 +245,6 @@ const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
     socket.on('call-failed', handleCallFailed);
 
     return () => {
-      console.log('🧹 Cleaning up socket listeners');
       if (!isCaller) {
         socket.off('incoming-call', handleIncomingCallOffer);
       }
@@ -314,15 +267,12 @@ const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
           setCallDuration(elapsed);
         }
       }, 1000);
-      
-      console.log('⏱️ Call timer started');
     }
 
     return () => {
       if (callTimerRef.current) {
         clearInterval(callTimerRef.current);
         callTimerRef.current = null;
-        console.log('⏱️ Call timer stopped');
       }
     };
   }, [callStatus]);
@@ -394,24 +344,18 @@ const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
 
   const handleAcceptCall = async () => {
     if (!peerConnectionRef.current || !incomingOffer || hasProcessedOfferRef.current) {
-      console.error('❌ Cannot accept call - invalid state');
       return;
     }
 
-    console.log('✅ User accepted call - processing offer');
     setIsCallAccepted(true);
     hasProcessedOfferRef.current = true;
 
     try {
-      console.log('📦 Processing incoming offer after user acceptance');
       await peerConnectionRef.current.setRemoteDescription(new RTCSessionDescription(incomingOffer));
-      console.log('✅ Remote description set from stored offer');
       
       const answer = await peerConnectionRef.current.createAnswer();
       await peerConnectionRef.current.setLocalDescription(answer);
-      console.log('✅ Local description (answer) set');
       
-      console.log('📤 Sending answer to caller');
       socket?.emit('answer-call', {
         callerId: recipientId,
         receiverId: currentUserId,
@@ -420,15 +364,11 @@ const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
       });
       
       // Process queued ICE candidates
-      console.log('🧊 Processing queued ICE candidates:', iceCandidatesQueueRef.current.length);
       for (const candidate of iceCandidatesQueueRef.current) {
         await peerConnectionRef.current.addIceCandidate(new RTCIceCandidate(candidate));
       }
       iceCandidatesQueueRef.current = [];
-      
-      console.log('✅ Answer sent successfully');
     } catch (error) {
-      console.error('❌ Error processing offer after acceptance:', error);
       hasProcessedOfferRef.current = false;
       setIsCallAccepted(false);
     }

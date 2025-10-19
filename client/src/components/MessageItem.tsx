@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, forwardRef } from 'react';
 import { Message } from '../types';
 
 interface MessageItemProps {
@@ -13,7 +13,7 @@ interface MessageItemProps {
 
 const API_URL = 'http://localhost:5000';
 
-const MessageItem: React.FC<MessageItemProps> = ({
+const MessageItem = forwardRef<HTMLDivElement, MessageItemProps>(({
   message,
   isOwnMessage,
   currentUserId,
@@ -21,11 +21,12 @@ const MessageItem: React.FC<MessageItemProps> = ({
   onDelete,
   onPin,
   showSenderName = false
-}) => {
+}, ref) => {
   const [showMenu, setShowMenu] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [menuPosition, setMenuPosition] = useState<'top' | 'bottom'>('bottom');
   const [copySuccess, setCopySuccess] = useState(false);
+  const [isMessageActive, setIsMessageActive] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const messageRef = useRef<HTMLDivElement>(null);
 
@@ -33,6 +34,16 @@ const MessageItem: React.FC<MessageItemProps> = ({
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setShowMenu(false);
+        // Ketika menu ditutup di mobile, tutup juga active state
+        if (window.innerWidth < 768) {
+          setIsMessageActive(false);
+        }
+      }
+      
+      // Close active state on mobile when clicking outside message (but not on menu)
+      if (messageRef.current && !messageRef.current.contains(event.target as Node) &&
+          (!menuRef.current || !menuRef.current.contains(event.target as Node))) {
+        setIsMessageActive(false);
       }
     };
 
@@ -59,7 +70,13 @@ const MessageItem: React.FC<MessageItemProps> = ({
       setMenuPosition('bottom');
     }
 
-    setShowMenu(!showMenu);
+    const newShowMenu = !showMenu;
+    setShowMenu(newShowMenu);
+    
+    // Di mobile, maintain active state ketika menu dibuka
+    if (window.innerWidth < 768 && newShowMenu) {
+      setIsMessageActive(true);
+    }
   };
 
   // Handle copy message
@@ -74,7 +91,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
         setCopySuccess(false);
       }, 2000);
     } catch (err) {
-      console.error('Failed to copy:', err);
+      // Failed to copy
     }
   };
 
@@ -123,20 +140,23 @@ const MessageItem: React.FC<MessageItemProps> = ({
     );
   };
 
+  // Handle message click on mobile
+  const handleMessageClick = () => {
+    // Toggle active state on mobile
+    if (window.innerWidth < 768) {
+      setIsMessageActive(!isMessageActive);
+    }
+  };
+
   return (
-    <div className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'} group`}>
-      <div ref={messageRef} className="relative max-w-[85%] sm:max-w-[75%] lg:max-w-md overflow-hidden">
-        {/* Pin indicator */}
-        {message.isPinned && (
-          <div className={`flex items-center gap-1 mb-1 ${isOwnMessage ? 'justify-end' : 'justify-start'}`}>
-            <svg className="w-3 h-3 text-amber-500" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-            </svg>
-            <span className="text-xs text-amber-600 font-medium">Pin</span>
-          </div>
-        )}
+    <div 
+      ref={ref}
+      className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'} group relative transition-all duration-300 rounded-2xl`}
+    >
+      <div ref={messageRef} className="relative max-w-[85%] sm:max-w-[75%] lg:max-w-md">
         
         <div
+          onClick={handleMessageClick}
           className={`rounded-2xl overflow-hidden ${
             message.isPinned ? 'ring-2 ring-amber-400' : ''
           } ${
@@ -167,7 +187,6 @@ const MessageItem: React.FC<MessageItemProps> = ({
                 className="max-w-full h-auto cursor-pointer hover:opacity-90 transition-opacity"
                 onClick={() => window.open(`${API_URL}${message.fileUrl}`, '_blank')}
                 onError={(e) => {
-                  console.error('Image load error:', `${API_URL}${message.fileUrl}`);
                   (e.target as HTMLImageElement).style.display = 'none';
                 }}
                 crossOrigin="anonymous"
@@ -244,13 +263,16 @@ const MessageItem: React.FC<MessageItemProps> = ({
           </div>
         </div>
 
-        {/* Message menu - Posisi: kiri untuk pesan sendiri, kanan untuk pesan orang */}
-        <div className={`absolute ${isOwnMessage ? '-left-6 md:-left-8' : '-right-6 md:-right-8'} top-1/2 -translate-y-1/2 z-50`}>
+        {/* Message menu - Hanya tampil saat hover di desktop atau tap di mobile */}
+        <div className={`absolute ${isOwnMessage ? 'right-full mr-2' : 'left-full ml-2'} top-1/2 -translate-y-1/2 z-50`}>
           <button
             onClick={handleMenuToggle}
-            className="p-1 md:p-1.5 rounded-lg bg-white shadow-soft border border-neutral-200 text-neutral-600 hover:text-neutral-900 opacity-0 group-hover:opacity-100 transition-opacity relative z-50"
+            className={`p-1.5 rounded-full text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 transition-all ${
+              isMessageActive || showMenu ? 'opacity-100' : 'opacity-0 md:opacity-0 md:group-hover:opacity-100'
+            }`}
+            aria-label="Message options"
           >
-            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
               <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" />
             </svg>
           </button>
@@ -259,7 +281,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
           {showMenu && (
             <div
               ref={menuRef}
-              className={`absolute ${isOwnMessage ? 'right-full mr-1 md:mr-2' : 'left-full ml-1 md:ml-2'} ${menuPosition === 'top' ? 'bottom-0' : 'top-0'} w-44 md:w-48 bg-white rounded-lg shadow-large border border-neutral-100 py-1 z-[200]`}
+              className={`absolute ${isOwnMessage ? 'left-full ml-1 md:ml-2' : 'right-full mr-1 md:mr-2'} ${menuPosition === 'top' ? 'bottom-0' : 'top-0'} w-44 md:w-48 bg-white rounded-lg shadow-large border border-neutral-100 py-1 z-[200]`}
             >
               {/* Reply */}
               <button
@@ -374,6 +396,8 @@ const MessageItem: React.FC<MessageItemProps> = ({
       </div>
     </div>
   );
-};
+});
+
+MessageItem.displayName = 'MessageItem';
 
 export default MessageItem;
