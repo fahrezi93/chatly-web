@@ -108,15 +108,15 @@ const MessageItem: React.FC<MessageItemProps> = ({
     if (!replyMsg) return null;
 
     return (
-      <div className={`mb-2 px-3 py-2 rounded-lg border-l-4 ${
+      <div className={`mb-2 px-3 py-2 rounded-lg border-l-4 overflow-hidden ${
         isOwnMessage 
           ? 'bg-white/20 border-white/40' 
           : 'bg-neutral-100 border-neutral-300'
       }`}>
-        <p className={`text-xs font-medium ${isOwnMessage ? 'text-white/90' : 'text-neutral-700'}`}>
+        <p className={`text-xs font-medium ${isOwnMessage ? 'text-white/90' : 'text-neutral-700'} truncate`}>
           Membalas ke
         </p>
-        <p className={`text-xs ${isOwnMessage ? 'text-white/70' : 'text-neutral-600'} truncate`}>
+        <p className={`text-xs ${isOwnMessage ? 'text-white/70' : 'text-neutral-600'} truncate overflow-hidden`}>
           {replyMsg.content}
         </p>
       </div>
@@ -125,7 +125,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
 
   return (
     <div className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'} group`}>
-      <div ref={messageRef} className="relative max-w-xs lg:max-w-md">
+      <div ref={messageRef} className="relative max-w-[85%] sm:max-w-[75%] lg:max-w-md overflow-hidden">
         {/* Pin indicator */}
         {message.isPinned && (
           <div className={`flex items-center gap-1 mb-1 ${isOwnMessage ? 'justify-end' : 'justify-start'}`}>
@@ -147,7 +147,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
         >
           {/* Sender name for group chats (only show for others' messages) */}
           {showSenderName && !isOwnMessage && (
-            <div className="px-4 pt-2 pb-1">
+            <div className="px-3 md:px-4 pt-2 pb-1">
               <p className="text-xs font-semibold text-primary-600">
                 {typeof message.senderId === 'object' && message.senderId && 'username' in message.senderId
                   ? message.senderId.username 
@@ -172,7 +172,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
                 }}
                 crossOrigin="anonymous"
               />
-              <div className="px-4 py-2">
+              <div className="px-3 md:px-4 py-2">
                 <p className={`text-sm ${isOwnMessage ? 'text-white/90' : 'text-neutral-600'}`}>
                   {message.content}
                 </p>
@@ -182,7 +182,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
           
           {/* File message */}
           {message.messageType === 'file' && message.fileUrl && (
-            <div className="px-4 py-3">
+            <div className="px-3 md:px-4 py-2 md:py-3">
               <a 
                 href={`${API_URL}${message.fileUrl}`}
                 download={message.fileName}
@@ -209,13 +209,13 @@ const MessageItem: React.FC<MessageItemProps> = ({
           
           {/* Text message */}
           {(!message.messageType || message.messageType === 'text') && (
-            <div className="px-4 py-2.5">
-              <p className="break-words text-sm leading-relaxed">{message.content}</p>
+            <div className="px-3 md:px-4 py-2 md:py-2.5">
+              <p className="break-words whitespace-pre-wrap overflow-wrap-anywhere text-sm leading-relaxed">{message.content}</p>
             </div>
           )}
           
           {/* Time and status */}
-          <div className="flex items-center gap-1 px-4 pb-2">
+          <div className="flex items-center gap-1 px-3 md:px-4 pb-2">
             <p className={`text-xs ${isOwnMessage ? 'text-white/70' : 'text-neutral-400'}`}>
               {new Date(message.createdAt).toLocaleTimeString('id-ID', {
                 hour: '2-digit',
@@ -245,10 +245,10 @@ const MessageItem: React.FC<MessageItemProps> = ({
         </div>
 
         {/* Message menu - Posisi: kiri untuk pesan sendiri, kanan untuk pesan orang */}
-        <div className={`absolute ${isOwnMessage ? '-left-8' : '-right-8'} top-1/2 -translate-y-1/2 z-50`}>
+        <div className={`absolute ${isOwnMessage ? '-left-6 md:-left-8' : '-right-6 md:-right-8'} top-1/2 -translate-y-1/2 z-50`}>
           <button
             onClick={handleMenuToggle}
-            className="p-1.5 rounded-lg bg-white shadow-soft border border-neutral-200 text-neutral-600 hover:text-neutral-900 opacity-0 group-hover:opacity-100 transition-opacity relative z-50"
+            className="p-1 md:p-1.5 rounded-lg bg-white shadow-soft border border-neutral-200 text-neutral-600 hover:text-neutral-900 opacity-0 group-hover:opacity-100 transition-opacity relative z-50"
           >
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
               <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" />
@@ -259,7 +259,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
           {showMenu && (
             <div
               ref={menuRef}
-              className={`absolute ${isOwnMessage ? 'right-full mr-2' : 'left-full ml-2'} ${menuPosition === 'top' ? 'bottom-0' : 'top-0'} w-48 bg-white rounded-lg shadow-large border border-neutral-100 py-1 z-[200]`}
+              className={`absolute ${isOwnMessage ? 'right-full mr-1 md:mr-2' : 'left-full ml-1 md:ml-2'} ${menuPosition === 'top' ? 'bottom-0' : 'top-0'} w-44 md:w-48 bg-white rounded-lg shadow-large border border-neutral-100 py-1 z-[200]`}
             >
               {/* Reply */}
               <button

@@ -79,11 +79,11 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] flex flex-col shadow-large animate-[fadeIn_0.2s_ease-out]">
+    <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-2 md:p-4">
+      <div className="bg-white rounded-xl md:rounded-2xl w-full max-w-full sm:max-w-lg max-h-[95vh] md:max-h-[90vh] flex flex-col shadow-large animate-[fadeIn_0.2s_ease-out]">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200">
-          <h2 className="text-lg font-semibold text-neutral-900">Create New Group</h2>
+        <div className="flex items-center justify-between px-4 md:px-6 py-3 md:py-4 border-b border-neutral-200">
+          <h2 className="text-base md:text-lg font-semibold text-neutral-900">Create New Group</h2>
           <button
             onClick={onClose}
             className="p-2 text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 rounded-lg transition-all duration-200"
@@ -96,7 +96,7 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
 
         {/* Content */}
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto">
-          <div className="p-6 space-y-4">
+          <div className="p-4 md:p-6 space-y-3 md:space-y-4">
             {/* Group Name */}
             <Input
               label="Group Name"

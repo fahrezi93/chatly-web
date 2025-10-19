@@ -510,17 +510,17 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   }
 
   return (
-    <div className="flex-1 bg-white flex flex-col">
+    <div className="flex-1 bg-white flex flex-col h-full overflow-hidden">
       {/* Header */}
-      <div className="px-6 py-4 bg-white border-b border-neutral-200 flex items-center justify-between shadow-soft">
-        <div className="flex items-center gap-3">
+      <div className="px-3 md:px-6 py-3 md:py-4 bg-white border-b border-neutral-200 flex items-center justify-between shadow-soft flex-shrink-0">
+        <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1 overflow-hidden">
           {viewMode === 'group' && group ? (
             <>
-              <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full flex items-center justify-center text-white font-semibold shadow-soft">
+              <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full flex items-center justify-center text-white font-semibold shadow-soft flex-shrink-0">
                 {group.name.charAt(0).toUpperCase()}
               </div>
-              <div>
-                <h3 className="text-neutral-900 font-semibold text-sm">{group.name}</h3>
+              <div className="min-w-0 flex-1 overflow-hidden">
+                <h3 className="text-neutral-900 font-semibold text-sm truncate">{group.name}</h3>
                 <p className="text-xs text-neutral-500">
                   {Array.isArray(group.members) ? group.members.length : 0} members
                 </p>
@@ -529,9 +529,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           ) : recipient ? (
             <>
               <Avatar username={recipient.username} isOnline={recipient.isOnline} />
-              <div>
-                <h3 className="text-neutral-900 font-semibold text-sm">{recipient.username}</h3>
-                <p className={`text-xs flex items-center gap-1 ${
+              <div className="min-w-0 flex-1 overflow-hidden">
+                <h3 className="text-neutral-900 font-semibold text-sm truncate">{recipient.username}</h3>
+                <p className={`text-xs flex items-center gap-1 truncate ${
                   recipient.isOnline ? 'text-emerald-600' : 'text-neutral-500'
                 }`}>
                   <span className={`w-1.5 h-1.5 rounded-full ${
@@ -561,7 +561,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         ) : recipient ? (
           <button
             onClick={() => onStartCall(recipientId)}
-            className="px-4 py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-all duration-200 flex items-center gap-2 text-sm font-medium shadow-soft"
+            className="px-3 md:px-4 py-1.5 md:py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-all duration-200 flex items-center gap-1 md:gap-2 text-xs md:text-sm font-medium shadow-soft"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
@@ -572,7 +572,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-3 bg-neutral-50">
+      <div className="flex-1 overflow-y-auto p-3 md:p-6 space-y-3 bg-neutral-50">
         {messages.map((message, index) => {
           // Determine if message.senderId is a string or object
           const messageSenderId = typeof message.senderId === 'object' && message.senderId && '_id' in message.senderId
@@ -616,8 +616,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       <div className="bg-white border-t border-neutral-200">
         {/* Reply Preview */}
         {replyingTo && (
-          <div className="px-6 pt-3 pb-2 bg-neutral-100 border-t border-neutral-200 flex items-center justify-between">
-            <div className="flex-1 min-w-0">
+          <div className="px-3 md:px-6 pt-2 md:pt-3 pb-1.5 md:pb-2 bg-neutral-100 border-t border-neutral-200 flex items-center justify-between gap-2 flex-shrink-0">
+            <div className="flex-1 min-w-0 overflow-hidden">
               <div className="flex items-center gap-2 mb-1">
                 <svg className="w-4 h-4 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
@@ -628,7 +628,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             </div>
             <button
               onClick={() => setReplyingTo(null)}
-              className="p-1.5 text-neutral-500 hover:text-neutral-700 hover:bg-neutral-200 rounded-lg transition-colors ml-2"
+              className="p-1.5 text-neutral-500 hover:text-neutral-700 hover:bg-neutral-200 rounded-lg transition-colors flex-shrink-0"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -638,7 +638,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         )}
         
         {isTyping && (
-          <div className="px-6 pt-3 text-xs text-neutral-500 flex items-center gap-2">
+          <div className="px-3 md:px-6 pt-2 md:pt-3 text-xs text-neutral-500 flex items-center gap-2">
             <div className="flex gap-1">
               <span className="w-1.5 h-1.5 bg-neutral-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
               <span className="w-1.5 h-1.5 bg-neutral-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
@@ -650,13 +650,13 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         
         {/* Emoji Picker */}
         {showEmojiPicker && (
-          <div className="absolute bottom-24 right-6 z-50 shadow-large rounded-lg">
+          <div className="absolute bottom-20 md:bottom-24 right-3 md:right-6 z-50 shadow-large rounded-lg">
             <EmojiPicker onEmojiClick={handleEmojiClick} />
           </div>
         )}
         
-        <form onSubmit={handleSendMessage} className="p-4">
-          <div className="flex gap-2 items-center bg-neutral-100 rounded-2xl px-4 py-2">
+        <form onSubmit={handleSendMessage} className="p-2 md:p-4 flex-shrink-0">
+          <div className="flex gap-1.5 md:gap-2 items-center bg-neutral-100 rounded-2xl px-2 md:px-4 py-1.5 md:py-2 overflow-hidden">
             {/* File Upload Button */}
             <input
               type="file"
@@ -701,7 +701,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               value={newMessage}
               onChange={handleTyping}
               placeholder="Type a message..."
-              className="flex-1 px-2 py-2 bg-transparent text-neutral-900 placeholder-neutral-400 focus:outline-none text-sm"
+              className="flex-1 min-w-0 px-2 py-2 bg-transparent text-neutral-900 placeholder-neutral-400 focus:outline-none text-sm"
             />
             
             {/* Send Button */}

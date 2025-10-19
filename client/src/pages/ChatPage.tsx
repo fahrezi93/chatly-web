@@ -45,6 +45,9 @@ const ChatPage: React.FC = () => {
   // View mode: 'chat' or 'group'
   const [viewMode, setViewMode] = useState<'chat' | 'group'>('chat');
 
+  // Mobile state
+  const [showSidebar, setShowSidebar] = useState(true);
+
   useEffect(() => {
     // Check authentication
     const { token, userId } = getAuthData();
@@ -185,12 +188,22 @@ const ChatPage: React.FC = () => {
     setSelectedUserId(userId);
     setSelectedGroupId(null);
     setViewMode('chat');
+    // Hide sidebar on mobile when chat selected
+    setShowSidebar(false);
   };
 
   const handleSelectGroup = (groupId: string) => {
     setSelectedGroupId(groupId);
     setSelectedUserId(null);
     setViewMode('group');
+    // Hide sidebar on mobile when group selected
+    setShowSidebar(false);
+  };
+
+  // Back to contacts (show sidebar on mobile)
+  const handleBackToContacts = () => {
+    setShowSidebar(true);
+    // Don't clear selection, just show sidebar
   };
 
   const selectedRecipient = contacts.find(c => c._id === selectedUserId) || null;
@@ -209,30 +222,43 @@ const ChatPage: React.FC = () => {
   }
 
   return (
-    <div className="h-screen flex flex-col bg-neutral-50">
+    <div className="h-screen flex flex-col bg-neutral-50 overflow-hidden">
       {/* Top Header */}
-      <div className="bg-white border-b border-neutral-200 px-6 py-4 flex items-center justify-between shadow-soft">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-primary-500 rounded-lg flex items-center justify-center">
+      <div className="bg-white border-b border-neutral-200 px-4 md:px-6 py-3 md:py-4 flex items-center justify-between shadow-soft flex-shrink-0">
+        <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1 overflow-hidden">
+          {/* Mobile: Back button when chat is open */}
+          {!showSidebar && (
+            <button
+              onClick={handleBackToContacts}
+              className="md:hidden p-2 text-neutral-600 hover:bg-neutral-100 rounded-lg transition-colors"
+              aria-label="Back to contacts"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+          )}
+          
+          <div className="w-8 h-8 bg-primary-500 rounded-lg flex items-center justify-center flex-shrink-0">
             <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
             </svg>
           </div>
-          <h1 className="text-lg font-semibold text-neutral-900">Messages</h1>
+          <h1 className="text-base md:text-lg font-semibold text-neutral-900 truncate">Messages</h1>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">
           <button
             onClick={() => {
               setShowCallHistory(true);
               setMissedCallsCount(0); // Reset count when opened
             }}
-            className="px-3 py-2 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-lg transition-all duration-200 flex items-center gap-2 text-sm font-medium relative"
+            className="px-2 md:px-3 py-2 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-lg transition-all duration-200 flex items-center gap-1 md:gap-2 text-xs md:text-sm font-medium relative"
             title="Call History"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <span className="hidden sm:inline">History</span>
+            <span className="hidden md:inline">History</span>
             {missedCallsCount > 0 && (
               <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 shadow-soft">
                 {missedCallsCount > 99 ? '99+' : missedCallsCount}
@@ -242,13 +268,13 @@ const ChatPage: React.FC = () => {
 
           <button
             onClick={() => setShowCreateGroup(true)}
-            className="px-3 py-2 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-lg transition-all duration-200 flex items-center gap-2 text-sm font-medium"
+            className="px-2 md:px-3 py-2 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-lg transition-all duration-200 flex items-center gap-1 md:gap-2 text-xs md:text-sm font-medium"
             title="Create Group"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
-            <span className="hidden sm:inline">New Group</span>
+            <span className="hidden md:inline">New Group</span>
           </button>
           
           <div className="h-6 w-px bg-neutral-200 mx-1"></div>
@@ -262,8 +288,22 @@ const ChatPage: React.FC = () => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden">
-        <div className="w-80 bg-white border-r border-neutral-200 flex flex-col">
+      <div className="flex-1 flex overflow-hidden relative">
+        {/* Sidebar - Responsive */}
+        <div className={`
+          ${showSidebar ? 'translate-x-0' : '-translate-x-full'}
+          md:translate-x-0
+          fixed md:relative
+          inset-y-0 left-0
+          w-full sm:w-96 md:w-80
+          bg-white border-r border-neutral-200
+          flex flex-col
+          transition-transform duration-300 ease-in-out
+          z-30
+          md:z-auto
+          top-[57px] md:top-0
+          overflow-hidden
+        `}>
           {/* Tab Switcher */}
           <div className="flex border-b border-neutral-200">
             <button
@@ -348,15 +388,22 @@ const ChatPage: React.FC = () => {
           )}
         </div>
         
-        <ChatWindow
-          recipientId={selectedUserId || ''}
-          groupId={selectedGroupId || ''}
-          currentUserId={currentUserId}
-          recipient={selectedRecipient}
-          group={selectedGroup}
-          onStartCall={handleStartCall}
-          viewMode={viewMode}
-        />
+        {/* Chat Window - Responsive */}
+        <div className={`
+          flex-1
+          ${showSidebar ? 'hidden md:flex' : 'flex'}
+          flex-col
+        `}>
+          <ChatWindow
+            recipientId={selectedUserId || ''}
+            groupId={selectedGroupId || ''}
+            currentUserId={currentUserId}
+            recipient={selectedRecipient}
+            group={selectedGroup}
+            onStartCall={handleStartCall}
+            viewMode={viewMode}
+          />
+        </div>
       </div>
 
       {/* Voice Call Modal */}

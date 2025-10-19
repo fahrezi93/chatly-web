@@ -60,9 +60,9 @@ const ContactList: React.FC<ContactListProps> = ({
   }, [contacts, currentUserId]); // Fixed dependency
 
   return (
-    <div className="w-80 bg-white border-r border-neutral-200 flex flex-col">
-      <div className="px-6 py-4 border-b border-neutral-200">
-        <h2 className="text-base font-semibold text-neutral-900">Contacts</h2>
+    <div className="w-full flex flex-col h-full">
+      <div className="px-4 md:px-6 py-3 md:py-4 border-b border-neutral-200">
+        <h2 className="text-sm md:text-base font-semibold text-neutral-900">Contacts</h2>
         <p className="text-xs text-neutral-500 mt-1">{filteredContacts.length} contacts</p>
       </div>
       
@@ -75,7 +75,7 @@ const ContactList: React.FC<ContactListProps> = ({
             <p className="text-neutral-500 text-sm">No contacts yet</p>
           </div>
         ) : (
-          <div className="py-2">
+          <div className="py-1 md:py-2">
             {filteredContacts.map((contact) => {
               const unreadCount = unreadCounts[contact._id] || 0;
               
@@ -83,27 +83,27 @@ const ContactList: React.FC<ContactListProps> = ({
                 <div
                   key={contact._id}
                   onClick={() => onSelectContact(contact._id)}
-                  className={`px-4 py-3 mx-2 mb-1 flex items-center gap-3 cursor-pointer transition-all duration-200 rounded-lg ${
+                  className={`px-3 md:px-4 py-2.5 md:py-3 mx-1 md:mx-2 mb-1 flex items-center gap-2 md:gap-3 cursor-pointer transition-all duration-200 rounded-lg ${
                     selectedUserId === contact._id 
                       ? 'bg-primary-50 shadow-soft' 
                       : 'hover:bg-neutral-50'
                   }`}
                 >
                   <Avatar username={contact.username} isOnline={contact.isOnline} />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-0.5">
-                      <p className={`font-medium truncate text-sm ${
+                  <div className="flex-1 min-w-0 overflow-hidden">
+                    <div className="flex items-center justify-between mb-0.5 gap-2">
+                      <p className={`font-medium truncate text-sm flex-1 min-w-0 ${
                         selectedUserId === contact._id ? 'text-neutral-900' : 'text-neutral-800'
                       }`}>
                         {contact.username}
                       </p>
                       {unreadCount > 0 && (
-                        <span className="bg-primary-500 text-white text-xs font-semibold rounded-full px-2 py-0.5 min-w-[20px] text-center">
+                        <span className="bg-primary-500 text-white text-xs font-semibold rounded-full px-2 py-0.5 min-w-[20px] text-center flex-shrink-0">
                           {unreadCount > 99 ? '99+' : unreadCount}
                         </span>
                       )}
                     </div>
-                    <p className={`text-xs flex items-center gap-1 ${
+                    <p className={`text-xs flex items-center gap-1 truncate ${
                       contact.isOnline ? 'text-emerald-600' : 'text-neutral-500'
                     }`}>
                       <span className={`w-1.5 h-1.5 rounded-full ${

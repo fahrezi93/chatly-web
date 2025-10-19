@@ -66,3 +66,16 @@ body {
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
   transition-duration: 150ms;
 }
+
+/* Prevent text overflow and ensure proper word breaking */
+.break-words {
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: break-word;
+  hyphens: auto;
+}
+
+/* Additional utility for very long URLs or strings */
+.overflow-wrap-anywhere {
+  overflow-wrap: anywhere;
+}

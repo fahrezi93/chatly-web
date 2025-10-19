@@ -73,11 +73,11 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, user, onClose, onUp
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl w-full max-w-md shadow-large animate-[fadeIn_0.2s_ease-out]">
+    <div className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-2 md:p-4">
+      <div className="bg-white rounded-xl md:rounded-2xl w-full max-w-full sm:max-w-md shadow-large animate-[fadeIn_0.2s_ease-out] max-h-screen overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-200">
-          <h2 className="text-lg font-semibold text-neutral-900">Edit Profil</h2>
+        <div className="flex items-center justify-between px-4 md:px-6 py-3 md:py-4 border-b border-neutral-200">
+          <h2 className="text-base md:text-lg font-semibold text-neutral-900">Edit Profil</h2>
           <button
             onClick={onClose}
             className="p-2 text-neutral-400 hover:text-neutral-700 hover:bg-neutral-100 rounded-lg transition-all duration-200"
@@ -89,7 +89,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, user, onClose, onUp
         </div>
 
         {/* Content */}
-        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit} className="p-4 md:p-6 space-y-3 md:space-y-4">
           {/* Profile Picture */}
           <div className="flex flex-col items-center">
             <div className="relative">
@@ -97,7 +97,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, user, onClose, onUp
                 <img
                   src={previewUrl.startsWith('blob:') || previewUrl.startsWith('data:') ? previewUrl : `${API_URL}${previewUrl}`}
                   alt="Profile"
-                  className="w-24 h-24 rounded-full object-cover shadow-soft"
+                  className="w-20 h-20 md:w-24 md:h-24 rounded-full object-cover shadow-soft"
                   onError={(e) => {
                     console.error('Profile image load error:', previewUrl);
                     // Fallback to Avatar component
