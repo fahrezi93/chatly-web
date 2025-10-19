@@ -4,6 +4,7 @@ import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
 import Avatar from './Avatar';
 import MessageItem from './MessageItem';
 import DateSeparator from './DateSeparator';
+import FilePreviewModal from './FilePreviewModal';
 import { Message, User, Group } from '../types';
 import { 
   requestNotificationPermission, 
@@ -68,6 +69,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
+  const [fileToPreview, setFileToPreview] = useState<File | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const messageRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const isWindowFocused = useRef(true);
@@ -328,11 +330,23 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     const file = e.target.files?.[0];
     if (!file || !socket) return;
 
+    // Show preview modal instead of uploading immediately
+    setFileToPreview(file);
+    
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleSendFile = async (caption: string) => {
+    if (!fileToPreview || !socket) return;
+
     setUploading(true);
 
     try {
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append('file', fileToPreview);
 
       const response = await axios.post(`${API_URL}/api/upload`, formData, {
         headers: {
@@ -343,23 +357,41 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       const { fileUrl, filename, mimetype } = response.data;
       const messageType = mimetype.startsWith('image/') ? 'image' : 'file';
 
+      // Use caption if provided, otherwise use default
+      const messageContent = caption || (messageType === 'image' ? '📷 Gambar' : `📎 ${filename}`);
+
       // Send file message
-      socket.emit('private-message', {
-        senderId: currentUserId,
-        receiverId: recipientId,
-        content: messageType === 'image' ? '📷 Gambar' : `📎 ${filename}`,
-        messageType,
-        fileUrl: `${API_URL}${fileUrl}`,
-        fileName: filename,
-        fileType: mimetype
-      });
+      // Note: fileUrl is already a full Cloudinary URL from server
+      if (groupId) {
+        // Group message
+        socket.emit('group-message', {
+          senderId: currentUserId,
+          groupId: groupId,
+          content: messageContent,
+          messageType,
+          fileUrl: fileUrl, // Use fileUrl directly (already full Cloudinary URL)
+          fileName: filename,
+          fileType: mimetype
+        });
+      } else {
+        // Private message
+        socket.emit('private-message', {
+          senderId: currentUserId,
+          receiverId: recipientId,
+          content: messageContent,
+          messageType,
+          fileUrl: fileUrl, // Use fileUrl directly (already full Cloudinary URL)
+          fileName: filename,
+          fileType: mimetype
+        });
+      }
+      
+      // Close preview modal
+      setFileToPreview(null);
     } catch (error) {
       alert('Gagal mengupload file');
     } finally {
       setUploading(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
     }
   };
 
@@ -779,6 +811,16 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           </div>
         </form>
       </div>
+
+      {/* File Preview Modal */}
+      {fileToPreview && (
+        <FilePreviewModal
+          file={fileToPreview}
+          onSend={handleSendFile}
+          onCancel={() => setFileToPreview(null)}
+          isUploading={uploading}
+        />
+      )}
     </div>
   );
 };

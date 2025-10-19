@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, forwardRef } from 'react';
 import { Message } from '../types';
+import ImagePreviewModal from './ImagePreviewModal';
 
 interface MessageItemProps {
   message: Message;
@@ -27,6 +28,8 @@ const MessageItem = forwardRef<HTMLDivElement, MessageItemProps>(({
   const [menuPosition, setMenuPosition] = useState<'top' | 'bottom'>('bottom');
   const [copySuccess, setCopySuccess] = useState(false);
   const [isMessageActive, setIsMessageActive] = useState(false);
+  const [showImagePreview, setShowImagePreview] = useState(false);
+  const [isLoadingFile, setIsLoadingFile] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const messageRef = useRef<HTMLDivElement>(null);
 
@@ -180,49 +183,79 @@ const MessageItem = forwardRef<HTMLDivElement, MessageItemProps>(({
           
           {/* Image message */}
           {message.messageType === 'image' && message.fileUrl && (
-            <div>
+            <div className="relative">
               <img 
-                src={`${API_URL}${message.fileUrl}`}
+                src={message.fileUrl.startsWith('http') ? message.fileUrl : `${API_URL}${message.fileUrl}`}
                 alt={message.fileName || 'Image'} 
-                className="max-w-full h-auto cursor-pointer hover:opacity-90 transition-opacity"
-                onClick={() => window.open(`${API_URL}${message.fileUrl}`, '_blank')}
+                className="w-full max-w-[280px] md:max-w-[320px] h-auto max-h-[400px] object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                style={{ aspectRatio: 'auto' }}
+                onClick={() => setShowImagePreview(true)}
                 onError={(e) => {
+                  console.error('Image load error:', message.fileUrl);
                   (e.target as HTMLImageElement).style.display = 'none';
                 }}
-                crossOrigin="anonymous"
               />
-              <div className="px-3 md:px-4 py-2">
-                <p className={`text-sm ${isOwnMessage ? 'text-white/90' : 'text-neutral-600'}`}>
-                  {message.content}
-                </p>
-              </div>
+              {message.content && message.content !== '📷 Gambar' && (
+                <div className="px-3 md:px-4 py-2">
+                  <p className={`text-sm ${isOwnMessage ? 'text-white/90' : 'text-neutral-600'}`}>
+                    {message.content}
+                  </p>
+                </div>
+              )}
+              
+              {/* Image Preview Modal */}
+              {showImagePreview && (
+                <ImagePreviewModal
+                  imageUrl={message.fileUrl.startsWith('http') ? message.fileUrl : `${API_URL}${message.fileUrl}`}
+                  fileName={message.fileName}
+                  onClose={() => setShowImagePreview(false)}
+                />
+              )}
             </div>
           )}
           
           {/* File message */}
           {message.messageType === 'file' && message.fileUrl && (
             <div className="px-3 md:px-4 py-2 md:py-3">
-              <a 
-                href={`${API_URL}${message.fileUrl}`}
-                download={message.fileName}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-3 hover:opacity-80 transition-opacity"
+              <button
+                onClick={async () => {
+                  setIsLoadingFile(true);
+                  const url = message.fileUrl?.startsWith('http') ? message.fileUrl : `${API_URL}${message.fileUrl}`;
+                  
+                  // Simulate loading for better UX (give time for tab to open)
+                  setTimeout(() => {
+                    window.open(url, '_blank');
+                    // Reset loading after a short delay
+                    setTimeout(() => setIsLoadingFile(false), 500);
+                  }, 300);
+                }}
+                disabled={isLoadingFile}
+                className="flex items-center gap-3 hover:opacity-80 transition-opacity w-full text-left disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 <div className={`p-2 rounded-lg ${
                   isOwnMessage ? 'bg-white/20' : 'bg-neutral-100'
                 }`}>
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
+                  {isLoadingFile ? (
+                    <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  ) : (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm truncate">{message.fileName}</p>
                   <p className={`text-xs ${isOwnMessage ? 'text-white/70' : 'text-neutral-500'}`}>
-                    {message.content}
+                    {isLoadingFile 
+                      ? 'Membuka...' 
+                      : (message.content !== `📎 ${message.fileName}` ? message.content : 'Klik untuk preview')
+                    }
                   </p>
                 </div>
-              </a>
+              </button>
             </div>
           )}
           

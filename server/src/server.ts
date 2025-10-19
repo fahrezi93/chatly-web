@@ -47,8 +47,12 @@ cloudinary.config({
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: (req, file) => {
+    // Determine resource type based on file type
+    const isImage = file.mimetype.startsWith('image/');
+    
     return {
       folder: 'chat-app-uploads',
+      resource_type: isImage ? 'image' : 'raw', // Use 'raw' for non-image files (PDF, DOC, etc)
       allowed_formats: ['jpeg', 'jpg', 'png', 'gif', 'pdf', 'doc', 'docx', 'txt'],
       public_id: `chat-app-${Date.now()}-${Math.round(Math.random() * 1E9)}`,
     };

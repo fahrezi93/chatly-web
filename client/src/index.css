@@ -78,6 +78,10 @@ body {
   }
 }
 
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-out;
+}
+
 /* Smooth transitions for all interactive elements */
 * {
   transition-property: color, background-color, border-color, transform, box-shadow;
