@@ -281,7 +281,7 @@ const MessageItem = forwardRef<HTMLDivElement, MessageItemProps>(({
           {showMenu && (
             <div
               ref={menuRef}
-              className={`absolute ${isOwnMessage ? 'left-full ml-1 md:ml-2' : 'right-full mr-1 md:mr-2'} ${menuPosition === 'top' ? 'bottom-0' : 'top-0'} w-44 md:w-48 bg-white rounded-lg shadow-large border border-neutral-100 py-1 z-[200]`}
+              className={`absolute ${isOwnMessage ? 'right-full mr-1 md:mr-2' : 'left-full ml-1 md:ml-2'} ${menuPosition === 'top' ? 'bottom-0' : 'top-0'} w-44 md:w-48 bg-white rounded-lg shadow-large border border-neutral-100 py-1 z-[200]`}
             >
               {/* Reply */}
               <button

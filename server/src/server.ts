@@ -15,6 +15,9 @@ import Message from './models/Message';
 import CallHistory from './models/CallHistory';
 import Group from './models/Group';
 
+import { v2 as cloudinary } from 'cloudinary';
+import { CloudinaryStorage } from 'multer-storage-cloudinary';
+
 dotenv.config();
 
 const app = express();
@@ -24,7 +27,7 @@ const server = http.createServer(app);
 const uploadsDir = path.join(process.cwd(), 'server', 'uploads');
 const io = new Server(server, {
   cors: {
-    origin: 'http://localhost:5173',
+    origin: process.env.CLIENT_URL || 'http://localhost:5173',
     methods: ['GET', 'POST']
   }
 });
@@ -33,37 +36,28 @@ const io = new Server(server, {
 app.use(cors());
 app.use(express.json());
 
-// Serve uploaded files - Use absolute path
-app.use('/uploads', express.static(uploadsDir));
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
-// Configure multer for file uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    if (!fs.existsSync(uploadsDir)) {
-      fs.mkdirSync(uploadsDir, { recursive: true });
-    }
-    cb(null, uploadsDir);
+// Configure multer for Cloudinary
+const storage = new CloudinaryStorage({
+  cloudinary: cloudinary,
+  params: (req, file) => {
+    return {
+      folder: 'chat-app-uploads',
+      allowed_formats: ['jpeg', 'jpg', 'png', 'gif', 'pdf', 'doc', 'docx', 'txt'],
+      public_id: `chat-app-${Date.now()}-${Math.round(Math.random() * 1E9)}`,
+    };
   },
-  filename: (req, file, cb) => {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  }
 });
 
 const upload = multer({
   storage,
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
-  fileFilter: (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|gif|pdf|doc|docx|txt/;
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = allowedTypes.test(file.mimetype);
-
-    if (extname && mimetype) {
-      cb(null, true);
-    } else {
-      cb(new Error('Invalid file type'));
-    }
-  }
 });
 
 // MongoDB Connection
