@@ -234,7 +234,8 @@ app.post('/api/upload', upload.single('file'), async (req: Request, res: Respons
       return res.status(400).json({ message: 'No file uploaded' });
     }
 
-    const fileUrl = `/uploads/${req.file.filename}`;
+    // Use Cloudinary URL from multer-storage-cloudinary
+    const fileUrl = (req.file as any).path; // Cloudinary URL
     
     res.json({
       success: true,
@@ -280,9 +281,9 @@ app.put('/api/users/:userId', upload.single('profilePicture'), async (req: Reque
     if (bio !== undefined) updateData.bio = bio;
     if (status !== undefined) updateData.status = status;
 
-    // Handle profile picture upload
+    // Handle profile picture upload - use Cloudinary URL
     if (req.file) {
-      updateData.profilePicture = `/uploads/${req.file.filename}`;
+      updateData.profilePicture = (req.file as any).path; // Cloudinary URL
     }
 
     const user = await User.findByIdAndUpdate(
@@ -531,7 +532,7 @@ app.put('/api/groups/:groupId', upload.single('groupPicture'), async (req: Reque
     const updateData: any = {};
     if (name) updateData.name = name;
     if (description !== undefined) updateData.description = description;
-    if (req.file) updateData.groupPicture = `/uploads/${req.file.filename}`;
+    if (req.file) updateData.groupPicture = (req.file as any).path; // Cloudinary URL
 
     const updatedGroup = await Group.findByIdAndUpdate(
       groupId,
