@@ -3,6 +3,7 @@ import axios from 'axios';
 import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
 import Avatar from './Avatar';
 import MessageItem from './MessageItem';
+import DateSeparator from './DateSeparator';
 import { Message, User, Group } from '../types';
 import { 
   requestNotificationPermission, 
@@ -11,6 +12,7 @@ import {
   incrementUnreadCount,
   clearUnreadCount
 } from '../utils/notification';
+import { formatDateSeparator, isDifferentDay } from '../utils/dateFormat';
 import { useSocket } from '../context/SocketContext';
 
 interface ChatWindowProps {
@@ -620,21 +622,32 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             ? message.senderId._id
             : message.senderId;
           
+          // Check if we need to show date separator
+          const showDateSeparator = index === 0 || 
+            (index > 0 && isDifferentDay(messages[index - 1].createdAt, message.createdAt));
+          
           return (
-            <MessageItem
-              key={message._id || message.id || index}
-              ref={(el) => {
-                const msgId = message._id || message.id || '';
-                if (msgId) messageRefs.current[msgId] = el;
-              }}
-              message={message}
-              isOwnMessage={messageSenderId === currentUserId}
-              currentUserId={currentUserId}
-              onReply={handleReply}
-              onDelete={handleDelete}
-              onPin={handlePin}
-              showSenderName={viewMode === 'group'}
-            />
+            <React.Fragment key={message._id || message.id || index}>
+              {/* Date Separator */}
+              {showDateSeparator && (
+                <DateSeparator date={formatDateSeparator(message.createdAt)} />
+              )}
+              
+              {/* Message */}
+              <MessageItem
+                ref={(el) => {
+                  const msgId = message._id || message.id || '';
+                  if (msgId) messageRefs.current[msgId] = el;
+                }}
+                message={message}
+                isOwnMessage={messageSenderId === currentUserId}
+                currentUserId={currentUserId}
+                onReply={handleReply}
+                onDelete={handleDelete}
+                onPin={handlePin}
+                showSenderName={viewMode === 'group'}
+              />
+            </React.Fragment>
           );
         })}
         
