@@ -217,13 +217,27 @@ const MessageItem: React.FC<MessageItemProps> = ({
           {/* Time and status */}
           <div className="flex items-center gap-1 px-4 pb-2">
             <p className={`text-xs ${isOwnMessage ? 'text-white/70' : 'text-neutral-400'}`}>
-              {new Date(message.createdAt).toLocaleTimeString('en-US', {
+              {new Date(message.createdAt).toLocaleTimeString('id-ID', {
                 hour: '2-digit',
                 minute: '2-digit'
               })}
             </p>
             {isOwnMessage && (
-              <span className="text-xs text-white/70 ml-1">
+              <span 
+                className={`text-xs ml-1 ${
+                  message.isRead || message.status === 'read' 
+                    ? 'text-blue-400' 
+                    : 'text-white/70'
+                }`}
+                title={
+                  message.isRead || message.status === 'read'
+                    ? `Dibaca ${new Date(message.createdAt).toLocaleTimeString('id-ID', {
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}`
+                    : 'Terkirim'
+                }
+              >
                 {message.isRead || message.status === 'read' ? '✓✓' : '✓'}
               </span>
             )}

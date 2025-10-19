@@ -25,6 +25,30 @@ interface ChatWindowProps {
 
 const API_URL = 'http://localhost:5000';
 
+// Helper function to format last seen time
+const formatLastSeen = (lastSeen: Date | undefined): string => {
+  if (!lastSeen) return 'Tidak diketahui';
+  
+  const now = new Date();
+  const lastSeenDate = new Date(lastSeen);
+  const diffMs = now.getTime() - lastSeenDate.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+  
+  if (diffMins < 1) return 'Baru saja';
+  if (diffMins < 60) return `${diffMins} menit yang lalu`;
+  if (diffHours < 24) return `${diffHours} jam yang lalu`;
+  if (diffDays < 7) return `${diffDays} hari yang lalu`;
+  
+  return lastSeenDate.toLocaleDateString('id-ID', { 
+    day: 'numeric', 
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+};
+
 const ChatWindow: React.FC<ChatWindowProps> = ({ 
   recipientId, 
   groupId = '',
@@ -38,12 +62,14 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [otherUserTyping, setOtherUserTyping] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isWindowFocused = useRef(true);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const otherUserTypingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Request notification permission on mount
@@ -83,6 +109,15 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       if (messageSenderId === recipientId) {
         setMessages((prev) => [...prev, message]);
         
+        // Mark message as read immediately if chat is open
+        if (socket && (message._id || message.id)) {
+          socket.emit('mark-as-read', {
+            messageIds: [message._id || message.id],
+            receiverId: currentUserId,
+            senderId: recipientId
+          });
+        }
+        
         // Show notification if window is not focused
         if (!isWindowFocused.current && recipient) {
           showNotification(
@@ -94,6 +129,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           );
           playNotificationSound();
           incrementUnreadCount(recipientId);
+        } else {
+          // Clear unread count if window is focused
+          clearUnreadCount(recipientId);
         }
       } else if (messageSenderId !== currentUserId) {
         // Message from other user (not current chat)
@@ -176,6 +214,23 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           return msg;
         })
       );
+    });
+
+    // Listen for typing indicator
+    socket.on('user-typing', ({ senderId, isTyping: typing }: { senderId: string; isTyping: boolean }) => {
+      if (senderId === recipientId) {
+        setOtherUserTyping(typing);
+        
+        // Auto-hide typing indicator after 3 seconds
+        if (typing) {
+          if (otherUserTypingTimeoutRef.current) {
+            clearTimeout(otherUserTypingTimeoutRef.current);
+          }
+          otherUserTypingTimeoutRef.current = setTimeout(() => {
+            setOtherUserTyping(false);
+          }, 3000);
+        }
+      }
     });
 
     return () => {
@@ -477,12 +532,16 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               <div>
                 <h3 className="text-neutral-900 font-semibold text-sm">{recipient.username}</h3>
                 <p className={`text-xs flex items-center gap-1 ${
-                  recipient.isOnline ? 'text-emerald-600' : 'text-neutral-400'
+                  recipient.isOnline ? 'text-emerald-600' : 'text-neutral-500'
                 }`}>
                   <span className={`w-1.5 h-1.5 rounded-full ${
-                    recipient.isOnline ? 'bg-emerald-500' : 'bg-neutral-300'
+                    recipient.isOnline ? 'bg-emerald-500' : 'bg-neutral-400'
                   }`}></span>
-                  {recipient.isOnline ? 'Active now' : 'Offline'}
+                  {recipient.isOnline ? (
+                    otherUserTyping ? 'sedang mengetik...' : 'Online'
+                  ) : (
+                    `Terakhir dilihat ${formatLastSeen(recipient.lastSeen)}`
+                  )}
                 </p>
               </div>
             </>
@@ -529,10 +588,27 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               onReply={handleReply}
               onDelete={handleDelete}
               onPin={handlePin}
-              showSenderName={viewMode === 'group'} // Show sender name in group chats
+              showSenderName={viewMode === 'group'}
             />
           );
         })}
+        
+        {/* Typing Indicator */}
+        {otherUserTyping && (
+          <div className="flex justify-start">
+            <div className="bg-white rounded-2xl px-4 py-3 shadow-soft border border-neutral-100 flex items-center gap-2">
+              <span className="text-sm text-neutral-600">
+                {recipient?.username || 'User'} sedang mengetik
+              </span>
+              <div className="flex gap-1">
+                <div className="w-2 h-2 bg-neutral-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                <div className="w-2 h-2 bg-neutral-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                <div className="w-2 h-2 bg-neutral-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+              </div>
+            </div>
+          </div>
+        )}
+        
         <div ref={messagesEndRef} />
       </div>
 

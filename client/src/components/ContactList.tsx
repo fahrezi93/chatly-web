@@ -3,6 +3,26 @@ import Avatar from './Avatar';
 import { User } from '../types';
 import { getUnreadCount } from '../utils/notification';
 
+// Helper function to format last seen time
+const formatLastSeen = (lastSeen: Date | undefined): string => {
+  if (!lastSeen) return 'Offline';
+  
+  const now = new Date();
+  const lastSeenDate = new Date(lastSeen);
+  const diffMs = now.getTime() - lastSeenDate.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  
+  if (diffMins < 1) return 'Baru saja';
+  if (diffMins < 60) return `${diffMins}m yang lalu`;
+  if (diffHours < 24) return `${diffHours}j yang lalu`;
+  
+  return lastSeenDate.toLocaleDateString('id-ID', { 
+    day: 'numeric', 
+    month: 'short'
+  });
+};
+
 interface ContactListProps {
   contacts: User[];
   selectedUserId: string | null;
@@ -84,12 +104,12 @@ const ContactList: React.FC<ContactListProps> = ({
                       )}
                     </div>
                     <p className={`text-xs flex items-center gap-1 ${
-                      contact.isOnline ? 'text-emerald-600' : 'text-neutral-400'
+                      contact.isOnline ? 'text-emerald-600' : 'text-neutral-500'
                     }`}>
                       <span className={`w-1.5 h-1.5 rounded-full ${
-                        contact.isOnline ? 'bg-emerald-500' : 'bg-neutral-300'
+                        contact.isOnline ? 'bg-emerald-500' : 'bg-neutral-400'
                       }`}></span>
-                      {contact.isOnline ? 'Online' : 'Offline'}
+                      {contact.isOnline ? 'Online' : formatLastSeen(contact.lastSeen)}
                     </p>
                   </div>
                 </div>
