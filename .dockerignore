@@ -1,17 +1,19 @@
 # Dependencies
-node_modules
+**/node_modules
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+package-lock.json
 
 # Build outputs
-dist
-build
+**/dist
+**/build
 .next
 out
 
-# Client folder (not needed for backend)
-client
+# Client folder (not needed for backend deployment)
+client/**
+!client/package.json
 
 # Environment variables
 .env.local
