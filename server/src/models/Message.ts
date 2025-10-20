@@ -1,5 +1,11 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
+export interface IReaction {
+  emoji: string;
+  users: mongoose.Types.ObjectId[];
+  count: number;
+}
+
 export interface IMessage extends Document {
   senderId: mongoose.Types.ObjectId;
   receiverId?: mongoose.Types.ObjectId;
@@ -14,6 +20,7 @@ export interface IMessage extends Document {
   deletedFor?: mongoose.Types.ObjectId[];
   deletedForEveryone?: boolean;
   isPinned?: boolean;
+  reactions?: IReaction[];
   createdAt: Date;
 }
 
@@ -68,7 +75,21 @@ const MessageSchema: Schema = new Schema({
   isPinned: {
     type: Boolean,
     default: false
-  }
+  },
+  reactions: [{
+    emoji: {
+      type: String,
+      required: true
+    },
+    users: [{
+      type: Schema.Types.ObjectId,
+      ref: 'User'
+    }],
+    count: {
+      type: Number,
+      default: 0
+    }
+  }]
 }, {
   timestamps: true
 });

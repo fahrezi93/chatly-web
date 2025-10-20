@@ -361,6 +361,88 @@ app.post('/api/messages/:messageId/pin', async (req: Request, res: Response) => 
   }
 });
 
+// Add reaction to message
+app.post('/api/messages/:messageId/reaction', async (req: Request, res: Response) => {
+  try {
+    const { messageId } = req.params;
+    const { emoji, userId } = req.body;
+
+    const message = await Message.findById(messageId);
+    if (!message) {
+      return res.status(404).json({ message: 'Message not found' });
+    }
+
+    // Initialize reactions array if it doesn't exist
+    if (!message.reactions) {
+      message.reactions = [];
+    }
+
+    // Find existing reaction with the same emoji
+    const existingReactionIndex = message.reactions.findIndex(r => r.emoji === emoji);
+
+    if (existingReactionIndex >= 0) {
+      // Check if user already reacted with this emoji
+      const existingReaction = message.reactions[existingReactionIndex];
+      if (!existingReaction.users.includes(userId)) {
+        existingReaction.users.push(userId);
+        existingReaction.count = existingReaction.users.length;
+      }
+    } else {
+      // Create new reaction
+      message.reactions.push({
+        emoji,
+        users: [userId],
+        count: 1
+      });
+    }
+
+    await message.save();
+    res.json({ success: true, message });
+  } catch (error) {
+    console.error('Add reaction error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Remove reaction from message
+app.delete('/api/messages/:messageId/reaction', async (req: Request, res: Response) => {
+  try {
+    const { messageId } = req.params;
+    const { emoji, userId } = req.body;
+
+    const message = await Message.findById(messageId);
+    if (!message) {
+      return res.status(404).json({ message: 'Message not found' });
+    }
+
+    if (!message.reactions) {
+      return res.json({ success: true, message });
+    }
+
+    // Find reaction with the emoji
+    const reactionIndex = message.reactions.findIndex(r => r.emoji === emoji);
+    
+    if (reactionIndex >= 0) {
+      const reaction = message.reactions[reactionIndex];
+      
+      // Remove user from reaction
+      reaction.users = reaction.users.filter(id => id.toString() !== userId);
+      reaction.count = reaction.users.length;
+      
+      // Remove reaction if no users left
+      if (reaction.count === 0) {
+        message.reactions.splice(reactionIndex, 1);
+      }
+    }
+
+    await message.save();
+    res.json({ success: true, message });
+  } catch (error) {
+    console.error('Remove reaction error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // ============ Group Chat Routes ============
 
 // Create group
@@ -810,6 +892,89 @@ io.on('connection', (socket) => {
     
     if (receiverSocketId) {
       io.to(receiverSocketId).emit('user-typing', { userId: senderId, isTyping });
+    }
+  });
+
+  // Add reaction
+  socket.on('add-reaction', async (data: { messageId: string; emoji: string; userId: string }) => {
+    try {
+      const { messageId, emoji, userId } = data;
+      
+      // Get the message to find recipients
+      const message = await Message.findById(messageId);
+      if (!message) return;
+
+      // Notify all relevant users about the reaction
+      const recipients = [];
+      
+      if (message.receiverId) {
+        // Private message
+        recipients.push(message.senderId.toString(), message.receiverId.toString());
+      } else if (message.groupId) {
+        // Group message - get all group members
+        const group = await Group.findById(message.groupId);
+        if (group) {
+          recipients.push(...group.members.map(m => m.toString()));
+        }
+      }
+
+      // Emit to all recipients except the sender
+      recipients.forEach(recipientId => {
+        if (recipientId !== userId) {
+          const recipientSocketId = userSockets.get(recipientId);
+          if (recipientSocketId) {
+            io.to(recipientSocketId).emit('reaction-added', {
+              messageId,
+              emoji,
+              userId,
+              reaction: { emoji, users: [userId], count: 1 }
+            });
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Add reaction socket error:', error);
+    }
+  });
+
+  // Remove reaction
+  socket.on('remove-reaction', async (data: { messageId: string; emoji: string; userId: string }) => {
+    try {
+      const { messageId, emoji, userId } = data;
+      
+      // Get the message to find recipients
+      const message = await Message.findById(messageId);
+      if (!message) return;
+
+      // Notify all relevant users about the reaction removal
+      const recipients = [];
+      
+      if (message.receiverId) {
+        // Private message
+        recipients.push(message.senderId.toString(), message.receiverId.toString());
+      } else if (message.groupId) {
+        // Group message - get all group members
+        const group = await Group.findById(message.groupId);
+        if (group) {
+          recipients.push(...group.members.map(m => m.toString()));
+        }
+      }
+
+      // Emit to all recipients except the sender
+      recipients.forEach(recipientId => {
+        if (recipientId !== userId) {
+          const recipientSocketId = userSockets.get(recipientId);
+          if (recipientSocketId) {
+            io.to(recipientSocketId).emit('reaction-removed', {
+              messageId,
+              emoji,
+              userId
+            });
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Remove reaction socket error:', error);
     }
   });
 

@@ -9,6 +9,12 @@ export interface User {
   status?: string;
 }
 
+export interface Reaction {
+  emoji: string;
+  users: string[];
+  count: number;
+}
+
 export interface Message {
   _id?: string;
   id?: string;
@@ -27,6 +33,7 @@ export interface Message {
   deletedFor?: string[];
   deletedForEveryone?: boolean;
   isPinned?: boolean;
+  reactions?: Reaction[];
   sender?: User; // Deprecated, use senderId when populated
 }
 

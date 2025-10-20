@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, forwardRef } from 'react';
 import { Message } from '../types';
 import ImagePreviewModal from './ImagePreviewModal';
+import MessageReactions from './MessageReactions';
 
 interface MessageItemProps {
   message: Message;
@@ -9,6 +10,8 @@ interface MessageItemProps {
   onReply: (message: Message) => void;
   onDelete: (messageId: string, deleteForEveryone: boolean) => void;
   onPin?: (messageId: string) => void;
+  onAddReaction?: (messageId: string, emoji: string) => void;
+  onRemoveReaction?: (messageId: string, emoji: string) => void;
   showSenderName?: boolean; // For group chats
 }
 
@@ -21,6 +24,8 @@ const MessageItem = forwardRef<HTMLDivElement, MessageItemProps>(({
   onReply,
   onDelete,
   onPin,
+  onAddReaction,
+  onRemoveReaction,
   showSenderName = false
 }, ref) => {
   const [showMenu, setShowMenu] = useState(false);
@@ -154,9 +159,9 @@ const MessageItem = forwardRef<HTMLDivElement, MessageItemProps>(({
   return (
     <div 
       ref={ref}
-      className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'} group relative transition-all duration-300 rounded-2xl`}
+      className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'} relative transition-all duration-300 rounded-2xl`}
     >
-      <div ref={messageRef} className="relative max-w-[85%] sm:max-w-[75%] lg:max-w-md">
+      <div ref={messageRef} className="relative max-w-[85%] sm:max-w-[75%] lg:max-w-md group">
         
         <div
           onClick={handleMessageClick}
@@ -296,19 +301,53 @@ const MessageItem = forwardRef<HTMLDivElement, MessageItemProps>(({
           </div>
         </div>
 
-        {/* Message menu - Hanya tampil saat hover di desktop atau tap di mobile */}
-        <div className={`absolute ${isOwnMessage ? 'right-full mr-2' : 'left-full ml-2'} top-1/2 -translate-y-1/2 z-50`}>
-          <button
-            onClick={handleMenuToggle}
-            className={`p-1.5 rounded-full text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 transition-all ${
+        {/* Message Reactions - Show existing reactions below message */}
+        {!showImagePreview && message.reactions && message.reactions.length > 0 && (
+          <div className={`mt-2 px-1 ${isOwnMessage ? 'flex justify-end' : 'flex justify-start'}`}>
+            <MessageReactions
+              messageId={message._id || message.id || ''}
+              reactions={message.reactions || []}
+              currentUserId={currentUserId}
+              onAddReaction={onAddReaction || (() => {})}
+              onRemoveReaction={onRemoveReaction || (() => {})}
+              showAddButton={false} // Don't show add button here, it's in the menu area
+              isOwnMessage={isOwnMessage}
+            />
+          </div>
+        )}
+
+        {/* Message menu and reaction button - Smart positioning */}
+        {!showImagePreview && (
+          <div className={`absolute ${isOwnMessage ? 'right-full mr-2' : 'left-full ml-2'} top-1/2 -translate-y-1/2 z-50`}>
+            <div className={`flex items-center gap-1 transition-all ${
               isMessageActive || showMenu ? 'opacity-100' : 'opacity-0 md:opacity-0 md:group-hover:opacity-100'
-            }`}
-            aria-label="Message options"
-          >
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" />
-            </svg>
-          </button>
+            }`}>
+            {/* Reaction Button - Smart positioned next to menu */}
+            {onAddReaction && onRemoveReaction && (
+              <div className="relative">
+                <MessageReactions
+                  messageId={message._id || message.id || ''}
+                  reactions={[]} // Don't show existing reactions here, only add button
+                  currentUserId={currentUserId}
+                  onAddReaction={onAddReaction}
+                  onRemoveReaction={onRemoveReaction}
+                  showAddButton={true}
+                  isOwnMessage={isOwnMessage}
+                />
+              </div>
+            )}
+            
+            {/* Menu Button */}
+            <button
+              onClick={handleMenuToggle}
+              className="p-1.5 rounded-full text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 transition-all"
+              aria-label="Message options"
+            >
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" />
+              </svg>
+            </button>
+          </div>
 
           {/* Dropdown menu */}
           {showMenu && (
@@ -387,6 +426,7 @@ const MessageItem = forwardRef<HTMLDivElement, MessageItemProps>(({
             </div>
           )}
         </div>
+        )}
 
         {/* Delete confirmation */}
         {showDeleteConfirm && (

@@ -5,6 +5,8 @@ import Avatar from './Avatar';
 import MessageItem from './MessageItem';
 import DateSeparator from './DateSeparator';
 import FilePreviewModal from './FilePreviewModal';
+import SearchBar, { SearchFilters } from './SearchBar';
+import UnreadSeparator from './UnreadSeparator';
 import { Message, User, Group } from '../types';
 import { 
   requestNotificationPermission, 
@@ -70,7 +72,15 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const [uploading, setUploading] = useState(false);
   const [replyingTo, setReplyingTo] = useState<Message | null>(null);
   const [fileToPreview, setFileToPreview] = useState<File | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [, setSearchFilters] = useState<SearchFilters>({ messageType: 'all' });
+  const [filteredMessages, setFilteredMessages] = useState<Message[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showSearchBar, setShowSearchBar] = useState(false);
+  const [shouldAutoScroll, setShouldAutoScroll] = useState(false); // Start with false
+  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const previousMessagesRef = useRef<Message[]>([]);
   const messageRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const isWindowFocused = useRef(true);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -238,6 +248,68 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       }
     });
 
+    // Listen for reaction events
+    socket.on('reaction-added', ({ messageId, emoji, userId }: { 
+      messageId: string; 
+      emoji: string; 
+      userId: string; 
+    }) => {
+      setMessages(prev => 
+        prev.map(msg => {
+          if (msg._id === messageId || msg.id === messageId) {
+            const reactions = msg.reactions || [];
+            const existingReaction = reactions.find(r => r.emoji === emoji);
+            
+            if (existingReaction) {
+              // Add user to existing reaction
+              return {
+                ...msg,
+                reactions: reactions.map(r => 
+                  r.emoji === emoji 
+                    ? { ...r, users: [...r.users, userId], count: r.count + 1 }
+                    : r
+                )
+              };
+            } else {
+              // Create new reaction
+              return {
+                ...msg,
+                reactions: [...reactions, { emoji, users: [userId], count: 1 }]
+              };
+            }
+          }
+          return msg;
+        })
+      );
+    });
+
+    socket.on('reaction-removed', ({ messageId, emoji, userId }: { 
+      messageId: string; 
+      emoji: string; 
+      userId: string; 
+    }) => {
+      setMessages(prev => 
+        prev.map(msg => {
+          if (msg._id === messageId || msg.id === messageId) {
+            const reactions = msg.reactions || [];
+            return {
+              ...msg,
+              reactions: reactions.map(r => 
+                r.emoji === emoji 
+                  ? { 
+                      ...r, 
+                      users: r.users.filter(id => id !== userId),
+                      count: Math.max(0, r.count - 1)
+                    }
+                  : r
+              ).filter(r => r.count > 0) // Remove reactions with 0 count
+            };
+          }
+          return msg;
+        })
+      );
+    });
+
     return () => {
       socket.off('receive-message');
       socket.off('message-sent');
@@ -245,6 +317,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       socket.off('user-typing');
       socket.off('group-message-received');
       socket.off('message-deleted');
+      socket.off('reaction-added');
+      socket.off('reaction-removed');
     };
   }, [socket, recipientId, recipient, currentUserId, viewMode, groupId, group]);
 
@@ -255,12 +329,48 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         if (viewMode === 'group' && groupId) {
           // Load group messages
           const response = await axios.get(`${API_URL}/api/groups/${groupId}/messages`);
-          setMessages(response.data);
+          const loadedMessages = response.data;
+          setMessages(loadedMessages);
+          
+          // For group messages, scroll to bottom after a delay
+          setTimeout(() => {
+            messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+            setShouldAutoScroll(true);
+            setIsInitialLoad(false);
+          }, 100);
         } else if (recipientId) {
           // Load private messages
           const response = await axios.get(`${API_URL}/api/messages/${currentUserId}/${recipientId}`);
           const loadedMessages = response.data;
           setMessages(loadedMessages);
+          
+          // Find first unread message
+          const firstUnreadMessage = loadedMessages.find((msg: Message) => 
+            !msg.isRead && msg.receiverId === currentUserId
+          );
+          
+          // Scroll to first unread message or bottom if no unread messages
+          setTimeout(() => {
+            if (firstUnreadMessage) {
+              const messageId = firstUnreadMessage._id || firstUnreadMessage.id;
+              const element = messageRefs.current[messageId];
+              if (element) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                // Add highlight effect to show this is the first unread message
+                element.classList.add('highlight-message');
+                setTimeout(() => {
+                  element.classList.remove('highlight-message');
+                }, 2000);
+                // Enable auto-scroll after scrolling to unread message
+                setShouldAutoScroll(true);
+              }
+            } else {
+              // No unread messages, scroll to bottom
+              messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+              setShouldAutoScroll(true);
+            }
+            setIsInitialLoad(false);
+          }, 100); // Small delay to ensure DOM is ready
           
           // Clear unread count when opening chat
           clearUnreadCount(recipientId);
@@ -284,16 +394,58 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     };
 
     if (recipientId || groupId) {
-      loadMessages();
-      // Reset reply state when switching chats
+      // Reset states when switching chats
       setReplyingTo(null);
+      setShouldAutoScroll(false); // Disable auto-scroll initially
+      setIsInitialLoad(true); // Mark as initial load
+      previousMessagesRef.current = [];
+      
+      loadMessages();
     }
   }, [recipientId, groupId, viewMode, currentUserId, socket]);
 
-  // Auto scroll to bottom
+  // Auto scroll to bottom - only when new messages are added, not when reactions change
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    // Skip auto-scroll during initial load
+    if (isInitialLoad) {
+      previousMessagesRef.current = [...messages];
+      return;
+    }
+
+    const previousMessages = previousMessagesRef.current;
+    const currentMessages = messages;
+    
+    // Check if there are new messages (by comparing message IDs)
+    const hasNewMessages = currentMessages.length > previousMessages.length &&
+      currentMessages.some(msg => 
+        !previousMessages.find(prevMsg => 
+          (prevMsg._id || prevMsg.id) === (msg._id || msg.id)
+        )
+      );
+    
+    // Only auto-scroll if there are new messages and shouldAutoScroll is true
+    if (hasNewMessages && shouldAutoScroll) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+    
+    // Update previous messages reference
+    previousMessagesRef.current = [...currentMessages];
+  }, [messages, shouldAutoScroll, isInitialLoad]);
+
+  // Detect scroll position to determine if auto-scroll should be enabled
+  useEffect(() => {
+    const messagesContainer = document.querySelector('.messages-container');
+    if (!messagesContainer) return;
+
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = messagesContainer;
+      const isNearBottom = scrollHeight - scrollTop - clientHeight < 100; // 100px threshold
+      setShouldAutoScroll(isNearBottom);
+    };
+
+    messagesContainer.addEventListener('scroll', handleScroll);
+    return () => messagesContainer.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const handleTyping = (e: React.ChangeEvent<HTMLInputElement>) => {
     setNewMessage(e.target.value);
@@ -433,6 +585,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     setNewMessage('');
     setReplyingTo(null);
     setShowEmojiPicker(false);
+    
+    // Ensure auto-scroll is enabled when sending a message
+    setShouldAutoScroll(true);
+    setIsInitialLoad(false); // Mark as not initial load anymore
   };
 
   const handleReply = (message: Message) => {
@@ -535,6 +691,170 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     }
   };
 
+  // Handle search functionality
+  const handleSearch = (query: string, filters: SearchFilters) => {
+    setSearchQuery(query);
+    setSearchFilters(filters);
+    setIsSearching(true);
+
+    if (!query.trim()) {
+      setFilteredMessages([]);
+      setIsSearching(false);
+      return;
+    }
+
+    // Filter messages based on search query and filters
+    const filtered = messages.filter(message => {
+      // Text search
+      const matchesQuery = message.content.toLowerCase().includes(query.toLowerCase());
+      
+      // Message type filter
+      const matchesType = filters.messageType === 'all' || 
+                         (filters.messageType === 'text' && (!message.messageType || message.messageType === 'text')) ||
+                         (filters.messageType === 'image' && message.messageType === 'image') ||
+                         (filters.messageType === 'file' && message.messageType === 'file');
+      
+      // Date range filter
+      let matchesDate = true;
+      if (filters.dateRange?.start || filters.dateRange?.end) {
+        const messageDate = new Date(message.createdAt);
+        if (filters.dateRange.start) {
+          matchesDate = messageDate >= filters.dateRange.start;
+        }
+        if (filters.dateRange.end && matchesDate) {
+          matchesDate = messageDate <= filters.dateRange.end;
+        }
+      }
+
+      return matchesQuery && matchesType && matchesDate;
+    });
+
+    setFilteredMessages(filtered);
+    setIsSearching(false);
+  };
+
+  const handleClearSearch = () => {
+    setSearchQuery('');
+    setSearchFilters({ messageType: 'all' });
+    setFilteredMessages([]);
+    setIsSearching(false);
+    setShowSearchBar(false); // Hide search bar when clearing
+  };
+
+  // Handle message reactions
+  const handleAddReaction = async (messageId: string, emoji: string) => {
+    try {
+      // Check if user already reacted with this emoji
+      const message = messages.find(msg => (msg._id === messageId || msg.id === messageId));
+      if (message) {
+        const existingReaction = message.reactions?.find(r => r.emoji === emoji);
+        if (existingReaction?.users.includes(currentUserId)) {
+          // User already reacted with this emoji, don't add again
+          return;
+        }
+      }
+
+      // Optimistically update local state
+      setMessages(prev => 
+        prev.map(msg => {
+          if (msg._id === messageId || msg.id === messageId) {
+            const reactions = msg.reactions || [];
+            const existingReaction = reactions.find(r => r.emoji === emoji);
+            
+            if (existingReaction) {
+              // Add user to existing reaction (only if not already there)
+              if (!existingReaction.users.includes(currentUserId)) {
+                return {
+                  ...msg,
+                  reactions: reactions.map(r => 
+                    r.emoji === emoji 
+                      ? { ...r, users: [...r.users, currentUserId], count: r.count + 1 }
+                      : r
+                  )
+                };
+              }
+            } else {
+              // Create new reaction
+              return {
+                ...msg,
+                reactions: [...reactions, { emoji, users: [currentUserId], count: 1 }]
+              };
+            }
+          }
+          return msg;
+        })
+      );
+
+      // Call API
+      await axios.post(`${API_URL}/api/messages/${messageId}/reaction`, {
+        emoji,
+        userId: currentUserId
+      });
+
+      // Emit socket event
+      socket?.emit('add-reaction', {
+        messageId,
+        emoji,
+        userId: currentUserId
+      });
+    } catch (error) {
+      console.error('Error adding reaction:', error);
+      // Revert optimistic update on error
+      // You could implement a more sophisticated rollback here
+    }
+  };
+
+  const handleRemoveReaction = async (messageId: string, emoji: string) => {
+    try {
+      // Check if user actually reacted with this emoji
+      const message = messages.find(msg => (msg._id === messageId || msg.id === messageId));
+      if (message) {
+        const existingReaction = message.reactions?.find(r => r.emoji === emoji);
+        if (!existingReaction?.users.includes(currentUserId)) {
+          // User hasn't reacted with this emoji, nothing to remove
+          return;
+        }
+      }
+
+      // Optimistically update local state
+      setMessages(prev => 
+        prev.map(msg => {
+          if (msg._id === messageId || msg.id === messageId) {
+            const reactions = msg.reactions || [];
+            return {
+              ...msg,
+              reactions: reactions.map(r => 
+                r.emoji === emoji 
+                  ? { 
+                      ...r, 
+                      users: r.users.filter(userId => userId !== currentUserId),
+                      count: Math.max(0, r.count - 1)
+                    }
+                  : r
+              ).filter(r => r.count > 0) // Remove reactions with 0 count
+            };
+          }
+          return msg;
+        })
+      );
+
+      // Call API
+      await axios.delete(`${API_URL}/api/messages/${messageId}/reaction`, {
+        data: { emoji, userId: currentUserId }
+      });
+
+      // Emit socket event
+      socket?.emit('remove-reaction', {
+        messageId,
+        emoji,
+        userId: currentUserId
+      });
+    } catch (error) {
+      console.error('Error removing reaction:', error);
+      // Revert optimistic update on error
+    }
+  };
+
   // Get pinned messages
   const pinnedMessages = messages.filter(msg => msg.isPinned);
 
@@ -595,28 +915,57 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           ) : null}
         </div>
         
-        {/* Action buttons - Voice call only for private chat, Group info for group */}
-        {group && viewMode === 'group' ? (
+        {/* Action buttons - Search, Voice call, Group info */}
+        <div className="flex items-center gap-2">
+          {/* Search Toggle Button */}
           <button
-            className="p-2 text-neutral-600 hover:bg-neutral-100 rounded-lg transition-all duration-200"
-            title="Info Grup"
+            onClick={() => setShowSearchBar(!showSearchBar)}
+            className={`p-2 rounded-lg transition-all duration-200 ${
+              showSearchBar 
+                ? 'text-blue-600 bg-blue-50' 
+                : 'text-neutral-600 hover:bg-neutral-100'
+            }`}
+            title="Cari pesan"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           </button>
-        ) : recipient ? (
-          <button
-            onClick={() => onStartCall(recipientId)}
-            className="px-3 md:px-4 py-1.5 md:py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-all duration-200 flex items-center gap-1 md:gap-2 text-xs md:text-sm font-medium shadow-soft"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-            </svg>
-            <span className="hidden sm:inline">Voice Call</span>
-          </button>
-        ) : null}
+
+          {group && viewMode === 'group' ? (
+            <button
+              className="p-2 text-neutral-600 hover:bg-neutral-100 rounded-lg transition-all duration-200"
+              title="Info Grup"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </button>
+          ) : recipient ? (
+            <button
+              onClick={() => onStartCall(recipientId)}
+              className="px-3 md:px-4 py-1.5 md:py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-all duration-200 flex items-center gap-1 md:gap-2 text-xs md:text-sm font-medium shadow-soft"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+              </svg>
+              <span className="hidden sm:inline">Voice Call</span>
+            </button>
+          ) : null}
+        </div>
       </div>
+
+      {/* Search Bar */}
+      {showSearchBar && (
+        <div className="px-3 md:px-6 py-3 bg-white border-b border-gray-200 flex-shrink-0">
+          <SearchBar
+            onSearch={handleSearch}
+            onClear={handleClearSearch}
+            isSearching={isSearching}
+            resultCount={searchQuery ? filteredMessages.length : undefined}
+          />
+        </div>
+      )}
 
       {/* Pinned Message Banner */}
       {pinnedMessages.length > 0 && (
@@ -647,22 +996,49 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       )}
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-3 md:p-6 space-y-3 bg-neutral-50">
-        {messages.map((message, index) => {
+      <div className="flex-1 overflow-y-auto p-3 md:p-6 space-y-3 bg-neutral-50 messages-container">
+        {/* Show search results or all messages */}
+        {(searchQuery ? filteredMessages : messages).map((message, index) => {
           // Determine if message.senderId is a string or object
           const messageSenderId = typeof message.senderId === 'object' && message.senderId && '_id' in message.senderId
             ? message.senderId._id
             : message.senderId;
           
-          // Check if we need to show date separator
-          const showDateSeparator = index === 0 || 
-            (index > 0 && isDifferentDay(messages[index - 1].createdAt, message.createdAt));
+          // For search results, don't show date separators to avoid confusion
+          // For normal messages, show date separators
+          const messagesArray = searchQuery ? filteredMessages : messages;
+          const showDateSeparator = !searchQuery && (index === 0 || 
+            (index > 0 && isDifferentDay(messagesArray[index - 1].createdAt, message.createdAt)));
+          
+          // Check if this is the first unread message
+          const isFirstUnreadMessage = !searchQuery && 
+            !message.isRead && 
+            message.receiverId === currentUserId &&
+            (index === 0 || messagesArray[index - 1].isRead || messagesArray[index - 1].receiverId !== currentUserId);
           
           return (
             <React.Fragment key={message._id || message.id || index}>
-              {/* Date Separator */}
+              {/* Date Separator - Only for normal view */}
               {showDateSeparator && (
                 <DateSeparator date={formatDateSeparator(message.createdAt)} />
+              )}
+              
+              {/* Unread Separator - Show before first unread message */}
+              {isFirstUnreadMessage && (
+                <UnreadSeparator />
+              )}
+              
+              {/* Search result indicator */}
+              {searchQuery && (
+                <div className="text-xs text-gray-500 mb-1 px-2">
+                  {new Date(message.createdAt).toLocaleDateString('id-ID', {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </div>
               )}
               
               {/* Message */}
@@ -677,6 +1053,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                 onReply={handleReply}
                 onDelete={handleDelete}
                 onPin={handlePin}
+                onAddReaction={handleAddReaction}
+                onRemoveReaction={handleRemoveReaction}
                 showSenderName={viewMode === 'group'}
               />
             </React.Fragment>
