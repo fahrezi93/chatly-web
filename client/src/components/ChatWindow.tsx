@@ -7,6 +7,7 @@ import DateSeparator from './DateSeparator';
 import FilePreviewModal from './FilePreviewModal';
 import SearchBar, { SearchFilters } from './SearchBar';
 import UnreadSeparator from './UnreadSeparator';
+import GroupInfoPanel from './GroupInfoPanel';
 import { Message, User, Group } from '../types';
 import { 
   requestNotificationPermission, 
@@ -79,6 +80,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const [showSearchBar, setShowSearchBar] = useState(false);
   const [shouldAutoScroll, setShouldAutoScroll] = useState(false); // Start with false
   const [isInitialLoad, setIsInitialLoad] = useState(true);
+  const [showGroupInfo, setShowGroupInfo] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const previousMessagesRef = useRef<Message[]>([]);
   const messageRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
@@ -332,12 +334,16 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           const loadedMessages = response.data;
           setMessages(loadedMessages);
           
-          // For group messages, scroll to bottom after a delay
+          // For group messages, scroll to bottom with smooth animation
           setTimeout(() => {
-            messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+            const container = document.querySelector('.messages-container');
+            if (container) {
+              // Start from bottom with smooth scroll
+              container.scrollTop = container.scrollHeight;
+            }
             setShouldAutoScroll(true);
             setIsInitialLoad(false);
-          }, 100);
+          }, 150);
         } else if (recipientId) {
           // Load private messages
           const response = await axios.get(`${API_URL}/api/messages/${currentUserId}/${recipientId}`);
@@ -351,10 +357,11 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           
           // Scroll to first unread message or bottom if no unread messages
           setTimeout(() => {
+            const container = document.querySelector('.messages-container');
             if (firstUnreadMessage) {
               const messageId = firstUnreadMessage._id || firstUnreadMessage.id;
               const element = messageRefs.current[messageId];
-              if (element) {
+              if (element && container) {
                 element.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 // Add highlight effect to show this is the first unread message
                 element.classList.add('highlight-message');
@@ -365,12 +372,14 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
                 setShouldAutoScroll(true);
               }
             } else {
-              // No unread messages, scroll to bottom
-              messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+              // No unread messages, scroll to bottom smoothly
+              if (container) {
+                container.scrollTop = container.scrollHeight;
+              }
               setShouldAutoScroll(true);
             }
             setIsInitialLoad(false);
-          }, 100); // Small delay to ensure DOM is ready
+          }, 150); // Small delay to ensure DOM is ready
           
           // Clear unread count when opening chat
           clearUnreadCount(recipientId);
@@ -877,9 +886,11 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   }
 
   return (
-    <div className="flex-1 bg-white flex flex-col h-full overflow-hidden">
-      {/* Header */}
-      <div className="px-3 md:px-6 py-3 md:py-4 bg-white border-b border-neutral-200 flex items-center justify-between shadow-soft flex-shrink-0">
+    <div className="flex-1 bg-white flex h-full overflow-hidden">
+      {/* Main Chat Area */}
+      <div className="flex-1 flex flex-col h-full overflow-hidden">
+        {/* Header */}
+        <div className="px-3 md:px-6 py-3 md:py-4 bg-white border-b border-neutral-200 flex items-center justify-between shadow-soft flex-shrink-0">
         <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1 overflow-hidden">
           {viewMode === 'group' && group ? (
             <>
@@ -920,7 +931,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           {/* Search Toggle Button */}
           <button
             onClick={() => setShowSearchBar(!showSearchBar)}
-            className={`p-2 rounded-lg transition-all duration-200 ${
+            className={`p-2 rounded-lg transition-all duration-200 hover:scale-110 active:scale-95 ${
               showSearchBar 
                 ? 'text-blue-600 bg-blue-50' 
                 : 'text-neutral-600 hover:bg-neutral-100'
@@ -934,7 +945,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
           {group && viewMode === 'group' ? (
             <button
-              className="p-2 text-neutral-600 hover:bg-neutral-100 rounded-lg transition-all duration-200"
+              onClick={() => setShowGroupInfo(!showGroupInfo)}
+              className={`p-2 rounded-lg transition-all duration-200 hover:scale-110 active:scale-95 ${
+                showGroupInfo 
+                  ? 'text-primary-600 bg-primary-50' 
+                  : 'text-neutral-600 hover:bg-neutral-100'
+              }`}
               title="Info Grup"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -944,7 +960,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           ) : recipient ? (
             <button
               onClick={() => onStartCall(recipientId)}
-              className="px-3 md:px-4 py-1.5 md:py-2 bg-primary-500 hover:bg-primary-600 text-white rounded-lg transition-all duration-200 flex items-center gap-1 md:gap-2 text-xs md:text-sm font-medium shadow-soft"
+              className="px-3 md:px-4 py-1.5 md:py-2 bg-primary-500 hover:bg-primary-600 hover:scale-105 active:scale-95 text-white rounded-lg transition-all duration-200 flex items-center gap-1 md:gap-2 text-xs md:text-sm font-medium shadow-soft"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
@@ -957,7 +973,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
       {/* Search Bar */}
       {showSearchBar && (
-        <div className="px-3 md:px-6 py-3 bg-white border-b border-gray-200 flex-shrink-0">
+        <div className="px-3 md:px-6 py-3 bg-white border-b border-gray-200 flex-shrink-0 animate-slide-in-down overflow-hidden">
           <SearchBar
             onSearch={handleSearch}
             onClear={handleClearSearch}
@@ -969,10 +985,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
       {/* Pinned Message Banner */}
       {pinnedMessages.length > 0 && (
-        <div className="bg-amber-50 border-b border-amber-200 px-3 md:px-6 py-2.5 flex-shrink-0">
+        <div className="bg-amber-50 border-b border-amber-200 px-3 md:px-6 py-2.5 flex-shrink-0 animate-slide-in-down">
           <div 
             onClick={() => scrollToMessage(pinnedMessages[0]._id || pinnedMessages[0].id || '')}
-            className="flex items-center gap-2 cursor-pointer hover:bg-amber-100 p-2 rounded-lg transition-colors"
+            className="flex items-center gap-2 cursor-pointer hover:bg-amber-100 p-2 rounded-lg transition-all duration-200 hover:scale-[1.01]"
           >
             <svg className="w-4 h-4 text-amber-600 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
               <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
@@ -996,7 +1012,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       )}
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-3 md:p-6 space-y-3 bg-neutral-50 messages-container">
+      <div className="flex-1 overflow-y-auto p-3 md:p-6 space-y-3 bg-neutral-50 messages-container scroll-smooth">
         {/* Show search results or all messages */}
         {(searchQuery ? filteredMessages : messages).map((message, index) => {
           // Determine if message.senderId is a string or object
@@ -1063,7 +1079,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         
         {/* Typing Indicator */}
         {otherUserTyping && (
-          <div className="flex justify-start">
+          <div className="flex justify-start animate-slide-in-up">
             <div className="bg-white rounded-2xl px-4 py-3 shadow-soft border border-neutral-100 flex items-center gap-2">
               <span className="text-sm text-neutral-600">
                 {recipient?.username || 'User'} sedang mengetik
@@ -1078,126 +1094,145 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         )}
         
         <div ref={messagesEndRef} />
-      </div>
+        </div>
 
-      {/* Input */}
-      <div className="bg-white border-t border-neutral-200">
-        {/* Reply Preview */}
-        {replyingTo && (
-          <div className="px-3 md:px-6 pt-2 md:pt-3 pb-1.5 md:pb-2 bg-neutral-100 border-t border-neutral-200 flex items-center justify-between gap-2 flex-shrink-0">
-            <div className="flex-1 min-w-0 overflow-hidden">
-              <div className="flex items-center gap-2 mb-1">
-                <svg className="w-4 h-4 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-                </svg>
-                <p className="text-xs font-medium text-neutral-700">Membalas ke</p>
+        {/* Input */}
+        <div className="bg-white border-t border-neutral-200">
+          {/* Reply Preview */}
+          {replyingTo && (
+            <div className="px-3 md:px-6 pt-2 md:pt-3 pb-1.5 md:pb-2 bg-neutral-100 border-t border-neutral-200 flex items-center justify-between gap-2 flex-shrink-0">
+              <div className="flex-1 min-w-0 overflow-hidden">
+                <div className="flex items-center gap-2 mb-1">
+                  <svg className="w-4 h-4 text-primary-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                  </svg>
+                  <p className="text-xs font-medium text-neutral-700">Membalas ke</p>
+                </div>
+                <p className="text-sm text-neutral-600 truncate">{replyingTo.content}</p>
               </div>
-              <p className="text-sm text-neutral-600 truncate">{replyingTo.content}</p>
-            </div>
-            <button
-              onClick={() => setReplyingTo(null)}
-              className="p-1.5 text-neutral-500 hover:text-neutral-700 hover:bg-neutral-200 rounded-lg transition-colors flex-shrink-0"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-        )}
-        
-        {isTyping && (
-          <div className="px-3 md:px-6 pt-2 md:pt-3 text-xs text-neutral-500 flex items-center gap-2">
-            <div className="flex gap-1">
-              <span className="w-1.5 h-1.5 bg-neutral-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
-              <span className="w-1.5 h-1.5 bg-neutral-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
-              <span className="w-1.5 h-1.5 bg-neutral-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
-            </div>
-            <span>{recipient?.username} is typing...</span>
-          </div>
-        )}
-        
-        {/* Emoji Picker */}
-        {showEmojiPicker && (
-          <div className="absolute bottom-20 md:bottom-24 right-3 md:right-6 z-50 shadow-large rounded-lg">
-            <EmojiPicker onEmojiClick={handleEmojiClick} />
-          </div>
-        )}
-        
-        <form onSubmit={handleSendMessage} className="p-2 md:p-4 flex-shrink-0">
-          <div className="flex gap-1.5 md:gap-2 items-center bg-neutral-100 rounded-2xl px-2 md:px-4 py-1.5 md:py-2 overflow-hidden">
-            {/* File Upload Button */}
-            <input
-              type="file"
-              ref={fileInputRef}
-              onChange={handleFileUpload}
-              className="hidden"
-              accept="image/*,.pdf,.doc,.docx,.txt"
-            />
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
-              className="p-2 text-neutral-500 hover:text-neutral-700 hover:bg-white rounded-lg transition-all duration-200 disabled:opacity-50"
-              title="Send file"
-            >
-              {uploading ? (
-                <svg className="animate-spin w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              <button
+                onClick={() => setReplyingTo(null)}
+                className="p-1.5 text-neutral-500 hover:text-neutral-700 hover:bg-neutral-200 rounded-lg transition-colors flex-shrink-0"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
-              ) : (
+              </button>
+            </div>
+          )}
+          
+          {isTyping && (
+            <div className="px-3 md:px-6 pt-2 md:pt-3 text-xs text-neutral-500 flex items-center gap-2">
+              <div className="flex gap-1">
+                <span className="w-1.5 h-1.5 bg-neutral-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></span>
+                <span className="w-1.5 h-1.5 bg-neutral-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></span>
+                <span className="w-1.5 h-1.5 bg-neutral-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></span>
+              </div>
+              <span>{recipient?.username} is typing...</span>
+            </div>
+          )}
+          
+          {/* Emoji Picker */}
+          {showEmojiPicker && (
+            <div className="absolute bottom-20 md:bottom-24 right-3 md:right-6 z-50 shadow-large rounded-lg">
+              <EmojiPicker onEmojiClick={handleEmojiClick} />
+            </div>
+          )}
+          
+          <form onSubmit={handleSendMessage} className="p-2 md:p-4 flex-shrink-0">
+            <div className="flex gap-1.5 md:gap-2 items-center bg-neutral-100 rounded-2xl px-2 md:px-4 py-1.5 md:py-2 overflow-hidden">
+              {/* File Upload Button */}
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileUpload}
+                className="hidden"
+                accept="image/*,.pdf,.doc,.docx,.txt"
+              />
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="p-2 text-neutral-500 hover:text-neutral-700 hover:bg-white rounded-lg transition-all duration-200 disabled:opacity-50"
+                title="Send file"
+              >
+                {uploading ? (
+                  <svg className="animate-spin w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                ) : (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                  </svg>
+                )}
+              </button>
+              
+              {/* Emoji Button */}
+              <button
+                type="button"
+                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                className="p-2 text-neutral-500 hover:text-neutral-700 hover:bg-white rounded-lg transition-all duration-200"
+                title="Emoji"
+              >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
-              )}
-            </button>
-            
-            {/* Emoji Button */}
-            <button
-              type="button"
-              onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-              className="p-2 text-neutral-500 hover:text-neutral-700 hover:bg-white rounded-lg transition-all duration-200"
-              title="Emoji"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </button>
-            
-            {/* Text Input */}
-            <input
-              type="text"
-              value={newMessage}
-              onChange={handleTyping}
-              placeholder="Type a message..."
-              className="flex-1 min-w-0 px-2 py-2 bg-transparent text-neutral-900 placeholder-neutral-400 focus:outline-none text-sm"
-            />
-            
-            {/* Send Button */}
-            <button 
-              type="submit" 
-              disabled={!newMessage.trim()}
-              className={`p-2 rounded-lg transition-all duration-200 ${
-                newMessage.trim() 
-                  ? 'bg-primary-500 text-white hover:bg-primary-600 shadow-soft' 
-                  : 'bg-neutral-200 text-neutral-400 cursor-not-allowed'
-              }`}
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-              </svg>
-            </button>
-          </div>
-        </form>
-      </div>
+              </button>
+              
+              {/* Text Input */}
+              <input
+                type="text"
+                value={newMessage}
+                onChange={handleTyping}
+                placeholder="Type a message..."
+                className="flex-1 min-w-0 px-2 py-2 bg-transparent text-neutral-900 placeholder-neutral-400 focus:outline-none text-sm"
+              />
+              
+              {/* Send Button */}
+              <button 
+                type="submit" 
+                disabled={!newMessage.trim()}
+                className={`p-2 rounded-lg transition-all duration-200 ${
+                  newMessage.trim() 
+                    ? 'bg-primary-500 text-white hover:bg-primary-600 hover:scale-110 active:scale-95 shadow-soft' 
+                    : 'bg-neutral-200 text-neutral-400 cursor-not-allowed'
+                }`}
+              >
+                <svg className="w-5 h-5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                </svg>
+              </button>
+            </div>
+          </form>
+        </div>
 
-      {/* File Preview Modal */}
-      {fileToPreview && (
-        <FilePreviewModal
-          file={fileToPreview}
-          onSend={handleSendFile}
-          onCancel={() => setFileToPreview(null)}
-          isUploading={uploading}
-        />
+        {/* File Preview Modal */}
+        {fileToPreview && (
+          <FilePreviewModal
+            file={fileToPreview}
+            onSend={handleSendFile}
+            onCancel={() => setFileToPreview(null)}
+            isUploading={uploading}
+          />
+        )}
+      </div>
+      
+      {/* Group Info Panel with Backdrop */}
+      {showGroupInfo && group && viewMode === 'group' && (
+        <>
+          {/* Backdrop Overlay */}
+          <div 
+            className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 animate-fade-in"
+            onClick={() => setShowGroupInfo(false)}
+          />
+          
+          {/* Panel */}
+          <GroupInfoPanel
+            group={group}
+            currentUserId={currentUserId}
+            onClose={() => setShowGroupInfo(false)}
+          />
+        </>
       )}
     </div>
   );

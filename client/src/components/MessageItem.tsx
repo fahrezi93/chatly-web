@@ -159,13 +159,13 @@ const MessageItem = forwardRef<HTMLDivElement, MessageItemProps>(({
   return (
     <div 
       ref={ref}
-      className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'} relative transition-all duration-300 rounded-2xl`}
+      className={`flex ${isOwnMessage ? 'justify-end' : 'justify-start'} relative transition-all duration-300 rounded-2xl animate-fade-in-up`}
     >
       <div ref={messageRef} className="relative max-w-[85%] sm:max-w-[75%] lg:max-w-md group">
         
         <div
           onClick={handleMessageClick}
-          className={`rounded-2xl overflow-hidden ${
+          className={`rounded-2xl overflow-hidden transition-all duration-200 ${
             message.isPinned ? 'ring-2 ring-amber-400' : ''
           } ${
             isOwnMessage

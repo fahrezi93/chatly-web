@@ -141,7 +141,7 @@ const MessageReactions: React.FC<MessageReactionsProps> = ({
               <button
                 key={reaction.emoji}
                 onClick={() => handleReactionClick(reaction.emoji)}
-                className={`flex items-center px-2 py-1 rounded-full text-xs transition-all duration-200 ${
+                className={`flex items-center px-2 py-1 rounded-full text-xs transition-all duration-200 animate-pop hover:scale-110 ${
                   userHasReacted
                     ? 'bg-blue-600/20 border border-blue-500/30 text-blue-400'
                     : 'bg-gray-700/50 border border-gray-600/30 text-gray-300 hover:bg-gray-600/50'
@@ -172,7 +172,7 @@ const MessageReactions: React.FC<MessageReactionsProps> = ({
           {showQuickReactions && (
             <div
               ref={quickReactionsRef}
-              className={`absolute mb-2 bg-white border border-gray-200 rounded-lg p-2 shadow-lg z-20 emoji-picker-slide ${
+              className={`absolute mb-2 bg-white border border-gray-200 rounded-lg p-2 shadow-lg z-20 animate-scale-in ${
                 popupPosition === 'top' 
                   ? (isOwnMessage ? 'top-full right-0 mt-2' : 'top-full left-0 mt-2')
                   : (isOwnMessage ? 'bottom-full right-0 mb-2' : 'bottom-full left-0 mb-2')
@@ -183,7 +183,7 @@ const MessageReactions: React.FC<MessageReactionsProps> = ({
                   <button
                     key={emoji}
                     onClick={() => handleQuickReaction(emoji)}
-                    className="w-8 h-8 flex items-center justify-center rounded hover:bg-gray-100 transition-colors text-lg"
+                    className="w-8 h-8 flex items-center justify-center rounded hover:bg-gray-100 transition-all hover:scale-125 text-lg"
                     title={`Reaksi dengan ${emoji}`}
                   >
                     {emoji}
@@ -208,7 +208,7 @@ const MessageReactions: React.FC<MessageReactionsProps> = ({
           {showEmojiPicker && (
             <div
               ref={pickerRef}
-              className={`absolute bg-white border border-gray-200 rounded-lg p-3 shadow-lg z-20 max-w-xs emoji-picker-slide ${
+              className={`absolute bg-white border border-gray-200 rounded-lg p-3 shadow-lg z-20 max-w-xs animate-scale-in ${
                 popupPosition === 'top' 
                   ? (isOwnMessage ? 'top-full right-0 mt-2' : 'top-full left-0 mt-2')
                   : (isOwnMessage ? 'bottom-full right-0 mb-2' : 'bottom-full left-0 mb-2')
