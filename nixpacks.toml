@@ -2,7 +2,10 @@
 nixPkgs = ["nodejs_20"]
 
 [phases.install]
-cmds = ["cd server && npm ci --production=false --legacy-peer-deps"]
+cmds = [
+  "cd server && npm ci --omit=dev --prefer-offline --no-audit",
+  "cd server && npm install --save-dev typescript @types/node @types/express @types/cors @types/jsonwebtoken @types/bcryptjs --prefer-offline --no-audit"
+]
 
 [phases.build]
 cmds = ["cd server && npm run build"]
