@@ -3,13 +3,13 @@ const Footer = () => {
 
   return (
     <footer className="bg-[#1E293B] text-white">
-      <div className="max-w-7xl mx-auto px-6 lg:px-8 py-12">
-        <div className="grid md:grid-cols-4 gap-10 mb-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-10 mb-8 sm:mb-10">
           {/* Brand Section */}
-          <div className="md:col-span-1">
-            <div className="flex items-center space-x-2.5 mb-4">
-              <img src="/logo-chatly-putih.png" alt="Chatly Logo" className="w-7 h-7" />
-              <span className="text-lg font-bold">
+          <div className="col-span-2 md:col-span-1">
+            <div className="flex items-center space-x-2.5 mb-3 sm:mb-4">
+              <img src="/logo-chatly-putih.png" alt="Chatly Logo" className="w-6 h-6 sm:w-7 sm:h-7" />
+              <span className="text-base sm:text-lg font-bold">
                 Chatly
               </span>
             </div>
@@ -53,12 +53,12 @@ const Footer = () => {
         </div>
 
         {/* Bottom Bar */}
-        <div className="border-t border-white/10 pt-6">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-3">
-            <p className="text-white/60 text-xs">
+        <div className="border-t border-white/10 pt-4 sm:pt-6">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-2 sm:gap-3">
+            <p className="text-white/60 text-xs text-center md:text-left">
               © {currentYear} Chatly. Hak cipta dilindungi.
             </p>
-            <div className="flex items-center space-x-6 text-xs">
+            <div className="flex items-center space-x-4 sm:space-x-6 text-xs">
               <a href="#privacy" className="text-white/60 hover:text-white transition-colors">Kebijakan Privasi</a>
               <a href="#terms" className="text-white/60 hover:text-white transition-colors">Ketentuan Layanan</a>
             </div>

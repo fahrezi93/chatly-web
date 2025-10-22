@@ -1,79 +1,102 @@
 import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 
 const Hero = () => {
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 50) {
+        setIsScrolled(true);
+      } else {
+        setIsScrolled(false);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   return (
-    <section className="relative min-h-screen bg-gradient-to-br from-[#1E40AF] via-[#2563EB] to-[#7C3AED] overflow-hidden">
-      {/* Gradient Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#1E293B]/20 to-[#1E293B]/40"></div>
-      
-      {/* Subtle Grid Pattern */}
-      <div className="absolute inset-0 opacity-10" style={{
-        backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)',
-        backgroundSize: '40px 40px'
-      }}></div>
+    <>
+      {/* Fixed Modern Header */}
+      <header 
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b ${isScrolled ? 'bg-white/80 backdrop-blur-lg border-slate-200/80 shadow-sm' : 'bg-transparent border-transparent'}`}>
+        <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            {/* Logo */}
+            <div className="flex items-center space-x-2">
+              <div className="w-9 h-9 flex items-center justify-center">
+                <img src={isScrolled ? "/logo-chatly.png" : "/logo-chatly-putih.png"} alt="Chatly" className="w-6 h-6" />
+              </div>
+              <span className={`text-xl font-bold transition-colors duration-300 ${isScrolled ? 'text-slate-800' : 'text-white'}`}>
+                Chatly
+              </span>
+            </div>
+            
+            {/* Navigation Links */}
+            <div className="hidden md:flex items-center space-x-1">
+              <a href="#features" className={`transition-colors duration-300 text-sm font-medium px-4 py-2 rounded-lg ${isScrolled ? 'text-slate-600 hover:bg-black/5' : 'text-white/80 hover:text-white hover:bg-white/10'}`}>
+                Fitur
+              </a>
+              <a href="#how-it-works" className={`transition-colors duration-300 text-sm font-medium px-4 py-2 rounded-lg ${isScrolled ? 'text-slate-600 hover:bg-black/5' : 'text-white/80 hover:text-white hover:bg-white/10'}`}>
+                Cara Kerja
+              </a>
+              <a href="#testimonials" className={`transition-colors duration-300 text-sm font-medium px-4 py-2 rounded-lg ${isScrolled ? 'text-slate-600 hover:bg-black/5' : 'text-white/80 hover:text-white hover:bg-white/10'}`}>
+                Testimonial
+              </a>
+            </div>
 
-      {/* Navigation */}
-      <nav className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 py-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <img src="/logo-chatly-putih.png" alt="Chatly Logo" className="w-8 h-8" />
-            <span className="text-xl font-bold text-white">
-              Chatly
-            </span>
+            {/* CTA Buttons */}
+            <div className="flex items-center space-x-3">
+              <Link 
+                to="/login" 
+                className={`transition-colors duration-300 font-medium text-sm hidden sm:inline-block px-4 py-2 rounded-lg ${isScrolled ? 'text-slate-600 hover:bg-black/5' : 'text-white/80 hover:text-white hover:bg-white/10'}`}>
+                Masuk
+              </Link>
+              <Link 
+                to="/login" 
+                className={`transition-all duration-300 text-sm font-semibold px-5 py-2 rounded-md ${isScrolled ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-lg hover:shadow-blue-500/30' : 'bg-white hover:bg-slate-200 text-blue-600 shadow-lg hover:shadow-white/30'}`}>
+                Coba Gratis
+              </Link>
+            </div>
           </div>
-          
-          <div className="hidden md:flex items-center space-x-8">
-            <a href="#about" className="text-white/90 hover:text-white transition-colors text-sm font-medium">
-              TENTANG
-            </a>
-            <a href="#pricing" className="text-white/90 hover:text-white transition-colors text-sm font-medium">
-              HARGA
-            </a>
-            <a href="#demo" className="text-white/90 hover:text-white transition-colors text-sm font-medium">
-              DEMO
-            </a>
-          </div>
+        </nav>
+      </header>
 
-          <div className="flex items-center space-x-4">
-            <Link 
-              to="/login" 
-              className="text-white/90 hover:text-white transition-colors font-medium text-sm"
-            >
-              Masuk
-            </Link>
-            <Link 
-              to="/login" 
-              className="bg-white text-[#2563EB] px-5 py-2 rounded-full font-semibold hover:bg-white/90 transition-all duration-200 text-sm"
-            >
-              COBA SEKARANG
-            </Link>
-          </div>
-        </div>
-      </nav>
+      <section className="relative min-h-screen bg-gradient-to-br from-[#1E40AF] via-[#2563EB] to-[#7C3AED] overflow-hidden pt-20 sm:pt-24">
+        {/* Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#1E293B]/20 to-[#1E293B]/40"></div>
+        
+        {/* Subtle Grid Pattern */}
+        <div className="absolute inset-0 opacity-10" style={{
+          backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)',
+          backgroundSize: '40px 40px'
+        }}></div>
 
       {/* Hero Content */}
-      <div className="relative z-10 max-w-7xl mx-auto px-6 lg:px-8 pt-12 pb-20">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12 pb-16 sm:pb-20">
+        <div className="grid lg:grid-cols-2 gap-8 sm:gap-12 items-center">
           {/* Left Content */}
-          <div className="space-y-6 text-white">
-            <div className="space-y-4">
-              <p className="text-xs font-semibold tracking-wider opacity-90 uppercase">
+          <div className="space-y-4 sm:space-y-6 text-white">
+            <div className="space-y-3 sm:space-y-4">
+              <p className="text-xs sm:text-sm font-semibold tracking-wider opacity-90 uppercase">
                 Tetap Terhubung Kapan Saja, Di Mana Saja
               </p>
               
-              <h1 className="text-4xl lg:text-5xl xl:text-6xl font-bold leading-tight">
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold leading-tight">
                 Ngobrol Tanpa Batas
               </h1>
             </div>
 
-            <p className="text-base lg:text-lg text-white/80 leading-relaxed max-w-lg">
+            <p className="text-sm sm:text-base lg:text-lg text-white/80 leading-relaxed max-w-lg">
               Chatly membuat obrolan, panggilan, dan pertemuan lebih lancar dari sebelumnya. Rasakan komunikasi modern yang cepat dengan sentuhan personal — semua dalam satu tempat.
             </p>
 
-            <div className="flex items-center space-x-4 pt-2">
+            <div className="flex items-center space-x-3 sm:space-x-4 pt-2">
               <Link 
                 to="/login"
-                className="inline-flex items-center justify-center space-x-2 bg-white text-[#2563EB] px-6 py-3 rounded-full font-semibold hover:bg-white/90 transition-all duration-200 shadow-lg text-sm"
+                className="inline-flex items-center justify-center space-x-2 bg-white text-[#2563EB] px-5 py-2.5 sm:px-6 sm:py-3 rounded-full font-semibold hover:bg-white/90 transition-all duration-200 shadow-lg text-xs sm:text-sm"
               >
                 <span>COBA SEKARANG</span>
               </Link>
@@ -82,23 +105,21 @@ const Hero = () => {
             {/* Stats */}
             <div className="flex items-center space-x-3 pt-4">
               <div className="flex -space-x-2">
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 border-2 border-white"></div>
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 border-2 border-white"></div>
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-pink-400 to-pink-600 border-2 border-white"></div>
-                <div className="w-9 h-9 rounded-full bg-white/20 backdrop-blur-sm border-2 border-white flex items-center justify-center">
-                  <span className="text-xs font-bold">+</span>
-                </div>
+                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 border-2 border-white"></div>
+                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 border-2 border-white"></div>
+                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-br from-pink-400 to-pink-600 border-2 border-white"></div>
+                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-br from-red-400 to-red-600 border-2 border-white"></div>
               </div>
               <div className="ml-2">
-                <p className="text-xl font-bold">99.1%</p>
+                <p className="text-lg sm:text-xl font-bold">99.1%</p>
                 <p className="text-xs text-white/70 max-w-sm">Rekam jejak terbukti dalam kepuasan klien dan kesuksesan berkelanjutan di seluruh dunia.</p>
               </div>
             </div>
           </div>
 
           {/* Right Content - Phone Mockup */}
-          <div className="relative flex items-center justify-center">
-            <div className="relative">
+          <div className="relative flex items-center justify-center mt-8 lg:mt-0">
+            <div className="relative scale-90 sm:scale-100">
               {/* Phone Frame */}
               <div className="relative w-[280px] h-[560px] bg-gradient-to-br from-gray-900 to-black rounded-[2.5rem] p-2.5 shadow-2xl border-[6px] border-gray-800">
                 {/* Notch */}
@@ -178,7 +199,7 @@ const Hero = () => {
               </div>
 
               {/* Floating Elements */}
-              <div className="absolute -right-6 top-16 bg-white rounded-xl shadow-2xl p-3 max-w-[180px] animate-float">
+              <div className="hidden lg:block absolute -right-6 top-16 bg-white rounded-xl shadow-2xl p-3 max-w-[180px] animate-float">
                 <p className="text-xs font-semibold text-[#1E293B] mb-0.5">Ngobrol Tanpa Batas</p>
                 <p className="text-[10px] text-[#64748B]">Cepat, Aman, & Mudah</p>
               </div>
@@ -187,6 +208,7 @@ const Hero = () => {
         </div>
       </div>
     </section>
+    </>
   );
 };
 
