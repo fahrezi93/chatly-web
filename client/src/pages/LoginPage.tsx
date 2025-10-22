@@ -5,7 +5,7 @@ import Button from '../components/Button';
 import Input from '../components/Input';
 import { saveAuthData, isAuthenticated } from '../utils/auth';
 
-const API_URL = 'http://localhost:5000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();

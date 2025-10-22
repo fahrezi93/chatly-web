@@ -29,7 +29,7 @@ interface ChatWindowProps {
   viewMode?: 'chat' | 'group';
 }
 
-const API_URL = 'http://localhost:5000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 // Helper function to format last seen time
 const formatLastSeen = (lastSeen: Date | undefined): string => {

@@ -12,7 +12,7 @@ interface ProfileModalProps {
   onUpdate: (updatedUser: User) => void;
 }
 
-const API_URL = 'http://localhost:5000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, user, onClose, onUpdate }) => {
   const [username, setUsername] = useState(user.username);
