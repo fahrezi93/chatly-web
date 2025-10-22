@@ -19,7 +19,7 @@ const LoginPage: React.FC = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Auto-login if already authenticated
+  // Auto-redirect if already authenticated
   useEffect(() => {
     if (isAuthenticated()) {
       navigate('/chat');
@@ -57,28 +57,39 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-large p-8 w-full max-w-md border border-neutral-100">
+    <div className="min-h-screen bg-gradient-to-br from-[#1E40AF] via-[#2563EB] to-[#7C3AED] flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Decorative background elements */}
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#1E293B]/20 to-[#1E293B]/40"></div>
+      <div className="absolute inset-0 opacity-10" style={{
+        backgroundImage: 'radial-gradient(circle at 1px 1px, white 1px, transparent 0)',
+        backgroundSize: '40px 40px'
+      }}></div>
+      
+      <div className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl p-8 w-full max-w-md relative z-10">
         <div className="text-center mb-8">
-          <div className="w-14 h-14 bg-primary-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-            </svg>
+          {/* Logo */}
+          <div className="flex justify-center mb-6">
+            <img 
+              src="/logo-chatly.png" 
+              alt="Chatly Logo" 
+              className="h-14 w-auto"
+            />
           </div>
-          <h1 className="text-2xl font-bold text-neutral-900 mb-2">
-            {isLogin ? 'Welcome back' : 'Create account'}
+          
+          <h1 className="text-2xl font-bold text-[#1E293B] mb-2">
+            {isLogin ? 'Selamat Datang Kembali!' : 'Bergabung dengan Chatly'}
           </h1>
-          <p className="text-neutral-500 text-sm">
-            {isLogin ? 'Sign in to continue messaging' : 'Get started with your new account'}
+          <p className="text-[#64748B] text-sm">
+            {isLogin ? 'Masuk untuk melanjutkan percakapan Anda' : 'Buat akun dan mulai ngobrol sekarang'}
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {!isLogin && (
             <Input
-              label="Username"
+              label="Nama Pengguna"
               type="text"
-              placeholder="Enter your username"
+              placeholder="Masukkan nama pengguna"
               value={formData.username}
               onChange={(e) => setFormData({ ...formData, username: e.target.value })}
               required
@@ -88,16 +99,16 @@ const LoginPage: React.FC = () => {
           <Input
             label="Email"
             type="email"
-            placeholder="Enter your email"
+            placeholder="Masukkan email Anda"
             value={formData.email}
             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
             required
           />
 
           <Input
-            label="Password"
+            label="Kata Sandi"
             type="password"
-            placeholder="Enter your password"
+            placeholder="Masukkan kata sandi"
             value={formData.password}
             onChange={(e) => setFormData({ ...formData, password: e.target.value })}
             required
@@ -110,39 +121,78 @@ const LoginPage: React.FC = () => {
                 id="rememberMe"
                 checked={rememberMe}
                 onChange={(e) => setRememberMe(e.target.checked)}
-                className="w-4 h-4 text-primary-600 bg-white border-neutral-300 rounded focus:ring-2 focus:ring-primary-500 cursor-pointer"
+                className="w-4 h-4 text-[#2563EB] bg-white border-[#64748B]/30 rounded focus:ring-2 focus:ring-[#2563EB] cursor-pointer"
               />
-              <label htmlFor="rememberMe" className="ml-2 text-sm text-neutral-600 cursor-pointer">
-                Remember me
+              <label htmlFor="rememberMe" className="ml-2 text-sm text-[#64748B] cursor-pointer">
+                Ingat saya
               </label>
             </div>
           )}
 
           {error && (
-            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
+            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-sm flex items-center gap-2">
+              <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
               {error}
             </div>
           )}
 
           <Button
             type="submit"
-            className="w-full"
+            className="w-full bg-[#2563EB] hover:bg-[#3B82F6] text-white font-semibold py-3 rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl"
             disabled={loading}
           >
-            {loading ? 'Processing...' : (isLogin ? 'Sign in' : 'Create account')}
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Memproses...
+              </span>
+            ) : (
+              isLogin ? 'Masuk' : 'Buat Akun'
+            )}
           </Button>
         </form>
 
-        <div className="mt-6 text-center">
+        {/* Divider */}
+        <div className="relative my-6">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-[#64748B]/20"></div>
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-4 bg-white text-[#64748B]">atau</span>
+          </div>
+        </div>
+
+        {/* Toggle Login/Register */}
+        <div className="text-center">
           <button
             onClick={() => {
               setIsLogin(!isLogin);
               setError('');
             }}
-            className="text-primary-600 hover:text-primary-700 transition-colors text-sm font-medium"
+            className="text-[#64748B] hover:text-[#2563EB] transition-colors text-sm font-medium group"
           >
-            {isLogin ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
+            {isLogin ? (
+              <>
+                Belum punya akun? <span className="text-[#2563EB] group-hover:underline">Daftar disini!</span>
+              </>
+            ) : (
+              <>
+                Sudah punya akun? <span className="text-[#2563EB] group-hover:underline">Masuk disini!</span>
+              </>
+            )}
           </button>
+        </div>
+
+        {/* Footer tagline */}
+        <div className="mt-8 text-center">
+          <p className="text-xs text-[#64748B] font-medium">
+            Ngobrol Tanpa Batas
+          </p>
         </div>
       </div>
     </div>

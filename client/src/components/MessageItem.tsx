@@ -169,14 +169,14 @@ const MessageItem = forwardRef<HTMLDivElement, MessageItemProps>(({
             message.isPinned ? 'ring-2 ring-amber-400' : ''
           } ${
             isOwnMessage
-              ? 'bg-primary-500 text-white'
-              : 'bg-white text-neutral-900 shadow-soft border border-neutral-100'
+              ? 'bg-[#2563EB] text-white shadow-md'
+              : 'bg-white text-[#1E293B] shadow-sm border border-[#64748B]/10'
           }`}
         >
           {/* Sender name for group chats (only show for others' messages) */}
           {showSenderName && !isOwnMessage && (
             <div className="px-3 md:px-4 pt-2 pb-1">
-              <p className="text-xs font-semibold text-primary-600">
+              <p className="text-xs font-semibold text-[#2563EB]">
                 {typeof message.senderId === 'object' && message.senderId && 'username' in message.senderId
                   ? message.senderId.username 
                   : 'Pengguna'}
@@ -202,7 +202,7 @@ const MessageItem = forwardRef<HTMLDivElement, MessageItemProps>(({
               />
               {message.content && message.content !== '📷 Gambar' && (
                 <div className="px-3 md:px-4 py-2">
-                  <p className={`text-sm ${isOwnMessage ? 'text-white/90' : 'text-neutral-600'}`}>
+                  <p className={`text-sm ${isOwnMessage ? 'text-white/95' : 'text-[#1E293B]'}`}>
                     {message.content}
                   </p>
                 </div>
@@ -238,7 +238,7 @@ const MessageItem = forwardRef<HTMLDivElement, MessageItemProps>(({
                 className="flex items-center gap-3 hover:opacity-80 transition-opacity w-full text-left disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 <div className={`p-2 rounded-lg ${
-                  isOwnMessage ? 'bg-white/20' : 'bg-neutral-100'
+                  isOwnMessage ? 'bg-white/20' : 'bg-[#F8FAFC]'
                 }`}>
                   {isLoadingFile ? (
                     <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
@@ -253,7 +253,7 @@ const MessageItem = forwardRef<HTMLDivElement, MessageItemProps>(({
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm truncate">{message.fileName}</p>
-                  <p className={`text-xs ${isOwnMessage ? 'text-white/70' : 'text-neutral-500'}`}>
+                  <p className={`text-xs ${isOwnMessage ? 'text-white/70' : 'text-[#64748B]'}`}>
                     {isLoadingFile 
                       ? 'Membuka...' 
                       : (message.content !== `📎 ${message.fileName}` ? message.content : 'Klik untuk preview')
@@ -273,7 +273,7 @@ const MessageItem = forwardRef<HTMLDivElement, MessageItemProps>(({
           
           {/* Time and status */}
           <div className="flex items-center gap-1 px-3 md:px-4 pb-2">
-            <p className={`text-xs ${isOwnMessage ? 'text-white/70' : 'text-neutral-400'}`}>
+            <p className={`text-xs ${isOwnMessage ? 'text-white/70' : 'text-[#64748B]'}`}>
               {new Date(message.createdAt).toLocaleTimeString('id-ID', {
                 hour: '2-digit',
                 minute: '2-digit'
@@ -283,7 +283,7 @@ const MessageItem = forwardRef<HTMLDivElement, MessageItemProps>(({
               <span 
                 className={`text-xs ml-1 ${
                   message.isRead || message.status === 'read' 
-                    ? 'text-blue-400' 
+                    ? 'text-[#10B981]' 
                     : 'text-white/70'
                 }`}
                 title={
@@ -340,7 +340,7 @@ const MessageItem = forwardRef<HTMLDivElement, MessageItemProps>(({
             {/* Menu Button */}
             <button
               onClick={handleMenuToggle}
-              className="p-1.5 rounded-full text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100 transition-all"
+              className="p-1.5 rounded-full text-[#64748B] hover:text-[#1E293B] hover:bg-[#64748B]/10 transition-all"
               aria-label="Message options"
             >
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">

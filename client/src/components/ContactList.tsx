@@ -61,18 +61,18 @@ const ContactList: React.FC<ContactListProps> = ({
 
   return (
     <div className="w-full flex flex-col h-full">
-      <div className="px-4 md:px-6 py-3 md:py-4 border-b border-neutral-200">
-        <h2 className="text-sm md:text-base font-semibold text-neutral-900">Contacts</h2>
-        <p className="text-xs text-neutral-500 mt-1">{filteredContacts.length} contacts</p>
+      <div className="px-4 md:px-6 py-3 md:py-4 border-b border-[#64748B]/10">
+        <h2 className="text-sm md:text-base font-bold text-[#1E293B]">Kontak</h2>
+        <p className="text-xs text-[#64748B] mt-1">{filteredContacts.length} kontak</p>
       </div>
       
       <div className="flex-1 overflow-y-auto">
         {filteredContacts.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full p-8 text-center">
-            <svg className="w-16 h-16 text-neutral-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-16 h-16 text-[#64748B]/30 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
-            <p className="text-neutral-500 text-sm">No contacts yet</p>
+            <p className="text-[#64748B] text-sm">Belum ada kontak</p>
           </div>
         ) : (
           <div className="py-1 md:py-2">
@@ -85,29 +85,29 @@ const ContactList: React.FC<ContactListProps> = ({
                   onClick={() => onSelectContact(contact._id)}
                   className={`px-3 md:px-4 py-2.5 md:py-3 mx-1 md:mx-2 mb-1 flex items-center gap-2 md:gap-3 cursor-pointer transition-all duration-200 rounded-lg ${
                     selectedUserId === contact._id 
-                      ? 'bg-primary-50 shadow-soft' 
-                      : 'hover:bg-neutral-50'
+                      ? 'bg-[#2563EB]/10 border-l-4 border-[#2563EB]' 
+                      : 'hover:bg-[#64748B]/5'
                   }`}
                 >
                   <Avatar username={contact.username} isOnline={contact.isOnline} />
                   <div className="flex-1 min-w-0 overflow-hidden">
                     <div className="flex items-center justify-between mb-0.5 gap-2">
-                      <p className={`font-medium truncate text-sm flex-1 min-w-0 ${
-                        selectedUserId === contact._id ? 'text-neutral-900' : 'text-neutral-800'
+                      <p className={`font-semibold truncate text-sm flex-1 min-w-0 ${
+                        selectedUserId === contact._id ? 'text-[#2563EB]' : 'text-[#1E293B]'
                       }`}>
                         {contact.username}
                       </p>
                       {unreadCount > 0 && (
-                        <span className="bg-primary-500 text-white text-xs font-semibold rounded-full px-2 py-0.5 min-w-[20px] text-center flex-shrink-0">
+                        <span className="bg-[#2563EB] text-white text-xs font-bold rounded-full px-2 py-0.5 min-w-[20px] text-center flex-shrink-0 shadow-sm">
                           {unreadCount > 99 ? '99+' : unreadCount}
                         </span>
                       )}
                     </div>
                     <p className={`text-xs flex items-center gap-1 truncate ${
-                      contact.isOnline ? 'text-emerald-600' : 'text-neutral-500'
+                      contact.isOnline ? 'text-[#10B981]' : 'text-[#64748B]'
                     }`}>
-                      <span className={`w-1.5 h-1.5 rounded-full ${
-                        contact.isOnline ? 'bg-emerald-500' : 'bg-neutral-400'
+                      <span className={`w-2 h-2 rounded-full ${
+                        contact.isOnline ? 'bg-[#10B981]' : 'bg-[#64748B]'
                       }`}></span>
                       {contact.isOnline ? 'Online' : formatLastSeen(contact.lastSeen)}
                     </p>

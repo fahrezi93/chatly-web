@@ -869,16 +869,18 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
   if (!recipient && !group) {
     return (
-      <div className="flex-1 bg-neutral-50 flex items-center justify-center">
-        <div className="text-center">
-          <svg className="w-24 h-24 text-neutral-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-          </svg>
-          <p className="text-neutral-500 text-base font-medium">
-            {viewMode === 'group' ? 'Select a group to start chatting' : 'Select a contact to start chatting'}
-          </p>
-          <p className="text-neutral-400 text-sm mt-2">
-            {viewMode === 'group' ? 'Choose from your groups on the left' : 'Choose from your contacts on the left'}
+      <div className="flex-1 bg-[#F8FAFC] flex items-center justify-center">
+        <div className="text-center px-6">
+          <div className="w-32 h-32 mx-auto mb-6 bg-gradient-to-br from-[#2563EB]/10 to-[#3B82F6]/10 rounded-full flex items-center justify-center">
+            <svg className="w-16 h-16 text-[#2563EB]/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+            </svg>
+          </div>
+          <h3 className="text-[#1E293B] text-xl font-bold mb-2">
+            {viewMode === 'group' ? 'Pilih Grup untuk Mulai Chat' : 'Pilih Kontak untuk Mulai Chat'}
+          </h3>
+          <p className="text-[#64748B] text-sm max-w-sm mx-auto">
+            {viewMode === 'group' ? 'Pilih dari daftar grup di sebelah kiri atau buat grup baru' : 'Pilih dari daftar kontak di sebelah kiri untuk memulai percakapan'}
           </p>
         </div>
       </div>
@@ -890,17 +892,17 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col h-full overflow-hidden">
         {/* Header */}
-        <div className="px-3 md:px-6 py-3 md:py-4 bg-white border-b border-neutral-200 flex items-center justify-between shadow-soft flex-shrink-0">
+        <div className="px-3 md:px-6 py-3 md:py-4 bg-white border-b border-[#64748B]/10 flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1 overflow-hidden">
           {viewMode === 'group' && group ? (
             <>
-              <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full flex items-center justify-center text-white font-semibold shadow-soft flex-shrink-0">
+              <div className="w-10 h-10 bg-gradient-to-br from-[#10B981] to-[#059669] rounded-full flex items-center justify-center text-white font-semibold shadow-sm flex-shrink-0">
                 {group.name.charAt(0).toUpperCase()}
               </div>
               <div className="min-w-0 flex-1 overflow-hidden">
-                <h3 className="text-neutral-900 font-semibold text-sm truncate">{group.name}</h3>
-                <p className="text-xs text-neutral-500">
-                  {Array.isArray(group.members) ? group.members.length : 0} members
+                <h3 className="text-[#1E293B] font-bold text-base truncate">{group.name}</h3>
+                <p className="text-xs text-[#64748B]">
+                  {Array.isArray(group.members) ? group.members.length : 0} anggota
                 </p>
               </div>
             </>
@@ -908,12 +910,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             <>
               <Avatar username={recipient.username} isOnline={recipient.isOnline} />
               <div className="min-w-0 flex-1 overflow-hidden">
-                <h3 className="text-neutral-900 font-semibold text-sm truncate">{recipient.username}</h3>
+                <h3 className="text-[#1E293B] font-bold text-base truncate">{recipient.username}</h3>
                 <p className={`text-xs flex items-center gap-1 truncate ${
-                  recipient.isOnline ? 'text-emerald-600' : 'text-neutral-500'
+                  recipient.isOnline ? 'text-[#10B981]' : 'text-[#64748B]'
                 }`}>
-                  <span className={`w-1.5 h-1.5 rounded-full ${
-                    recipient.isOnline ? 'bg-emerald-500' : 'bg-neutral-400'
+                  <span className={`w-2 h-2 rounded-full ${
+                    recipient.isOnline ? 'bg-[#10B981]' : 'bg-[#64748B]'
                   }`}></span>
                   {recipient.isOnline ? (
                     otherUserTyping ? 'sedang mengetik...' : 'Online'
@@ -931,10 +933,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           {/* Search Toggle Button */}
           <button
             onClick={() => setShowSearchBar(!showSearchBar)}
-            className={`p-2 rounded-lg transition-all duration-200 hover:scale-110 active:scale-95 ${
+            className={`p-2 rounded-lg transition-all duration-200 ${
               showSearchBar 
-                ? 'text-blue-600 bg-blue-50' 
-                : 'text-neutral-600 hover:bg-neutral-100'
+                ? 'text-[#2563EB] bg-[#2563EB]/10' 
+                : 'text-[#64748B] hover:bg-[#64748B]/5'
             }`}
             title="Cari pesan"
           >
@@ -946,10 +948,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           {group && viewMode === 'group' ? (
             <button
               onClick={() => setShowGroupInfo(!showGroupInfo)}
-              className={`p-2 rounded-lg transition-all duration-200 hover:scale-110 active:scale-95 ${
+              className={`p-2 rounded-lg transition-all duration-200 ${
                 showGroupInfo 
-                  ? 'text-primary-600 bg-primary-50' 
-                  : 'text-neutral-600 hover:bg-neutral-100'
+                  ? 'text-[#2563EB] bg-[#2563EB]/10' 
+                  : 'text-[#64748B] hover:bg-[#64748B]/5'
               }`}
               title="Info Grup"
             >
@@ -960,7 +962,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           ) : recipient ? (
             <button
               onClick={() => onStartCall(recipientId)}
-              className="px-3 md:px-4 py-1.5 md:py-2 bg-primary-500 hover:bg-primary-600 hover:scale-105 active:scale-95 text-white rounded-lg transition-all duration-200 flex items-center gap-1 md:gap-2 text-xs md:text-sm font-medium shadow-soft"
+              className="px-3 md:px-4 py-2 border-2 border-[#2563EB] text-[#2563EB] hover:bg-[#2563EB] hover:text-white rounded-lg transition-all duration-200 flex items-center gap-2 text-sm font-semibold"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
@@ -1012,7 +1014,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       )}
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-3 md:p-6 space-y-3 bg-neutral-50 messages-container scroll-smooth">
+      <div className="flex-1 overflow-y-auto p-3 md:p-6 space-y-3 bg-[#F8FAFC] messages-container scroll-smooth">
         {/* Show search results or all messages */}
         {(searchQuery ? filteredMessages : messages).map((message, index) => {
           // Determine if message.senderId is a string or object

@@ -8,6 +8,8 @@ import CallHistory from '../components/CallHistory';
 import ProfileDropdown from '../components/ProfileDropdown';
 import ProfileModal from '../components/ProfileModal';
 import CreateGroupModal from '../components/CreateGroupModal';
+import SettingsModal from '../components/SettingsModal';
+import PreferencesModal from '../components/PreferencesModal';
 import { User, Group } from '../types';
 import { getAuthData, clearAuthData } from '../utils/auth';
 import { useSocket } from '../context/SocketContext';
@@ -38,6 +40,8 @@ const ChatPage: React.FC = () => {
 
   // Profile states
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showPreferencesModal, setShowPreferencesModal] = useState(false);
 
   // Notification states
   const [missedCallsCount, setMissedCallsCount] = useState(0);
@@ -203,25 +207,25 @@ const ChatPage: React.FC = () => {
 
   if (!currentUser) {
     return (
-      <div className="h-screen flex items-center justify-center bg-neutral-50">
+      <div className="h-screen flex items-center justify-center bg-[#F8FAFC]">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-2 border-primary-500 border-t-transparent mx-auto mb-4"></div>
-          <p className="text-neutral-600">Loading...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-2 border-[#2563EB] border-t-transparent mx-auto mb-4"></div>
+          <p className="text-[#64748B]">Memuat...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="h-screen flex flex-col bg-neutral-50 overflow-hidden">
+    <div className="h-screen flex flex-col bg-[#F8FAFC] overflow-hidden">
       {/* Top Header */}
-      <div className="bg-white border-b border-neutral-200 px-4 md:px-6 py-3 md:py-4 flex items-center justify-between shadow-soft flex-shrink-0">
+      <div className="bg-gradient-to-r from-[#2563EB] to-[#3B82F6] px-4 md:px-6 py-3 md:py-4 flex items-center justify-between shadow-lg flex-shrink-0">
         <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1 overflow-hidden">
           {/* Mobile: Back button when chat is open */}
           {!showSidebar && (
             <button
               onClick={handleBackToContacts}
-              className="md:hidden p-2 text-neutral-600 hover:bg-neutral-100 rounded-lg transition-colors"
+              className="md:hidden p-2 text-white/80 hover:bg-white/10 rounded-lg transition-colors"
               aria-label="Back to contacts"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -230,12 +234,12 @@ const ChatPage: React.FC = () => {
             </button>
           )}
           
-          <div className="w-8 h-8 bg-primary-500 rounded-lg flex items-center justify-center flex-shrink-0">
-            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-            </svg>
-          </div>
-          <h1 className="text-base md:text-lg font-semibold text-neutral-900 truncate">Messages</h1>
+          <img 
+            src="/logo-chatly-putih.png" 
+            alt="Chatly" 
+            className="h-7 w-auto flex-shrink-0"
+          />
+          <h1 className="text-base md:text-lg font-bold text-white truncate">Chatly</h1>
         </div>
         <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">
           <button
@@ -243,15 +247,15 @@ const ChatPage: React.FC = () => {
               setShowCallHistory(true);
               setMissedCallsCount(0); // Reset count when opened
             }}
-            className="px-2 md:px-3 py-2 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-lg transition-all duration-200 flex items-center gap-1 md:gap-2 text-xs md:text-sm font-medium relative"
-            title="Call History"
+            className="px-2 md:px-3 py-2 text-white/90 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-200 flex items-center gap-1 md:gap-2 text-xs md:text-sm font-medium relative"
+            title="Riwayat Panggilan"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <span className="hidden md:inline">History</span>
+            <span className="hidden md:inline">Riwayat</span>
             {missedCallsCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 shadow-soft">
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 shadow-lg">
                 {missedCallsCount > 99 ? '99+' : missedCallsCount}
               </span>
             )}
@@ -259,20 +263,22 @@ const ChatPage: React.FC = () => {
 
           <button
             onClick={() => setShowCreateGroup(true)}
-            className="px-2 md:px-3 py-2 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-lg transition-all duration-200 flex items-center gap-1 md:gap-2 text-xs md:text-sm font-medium"
-            title="Create Group"
+            className="px-2 md:px-3 py-2 text-white/90 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-200 flex items-center gap-1 md:gap-2 text-xs md:text-sm font-medium"
+            title="Buat Grup"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
-            <span className="hidden md:inline">New Group</span>
+            <span className="hidden md:inline">Grup Baru</span>
           </button>
           
-          <div className="h-6 w-px bg-neutral-200 mx-1"></div>
+          <div className="h-6 w-px bg-white/20 mx-1"></div>
           
           <ProfileDropdown
             user={currentUser}
             onOpenProfile={() => setShowProfileModal(true)}
+            onOpenSettings={() => setShowSettingsModal(true)}
+            onOpenPreferences={() => setShowPreferencesModal(true)}
             onLogout={handleLogout}
           />
         </div>
@@ -287,7 +293,7 @@ const ChatPage: React.FC = () => {
           fixed md:relative
           inset-y-0 left-0
           w-full sm:w-96 md:w-80
-          bg-white border-r border-neutral-200
+          bg-white border-r border-[#64748B]/20
           flex flex-col
           transition-transform duration-300 ease-in-out
           z-30
@@ -296,7 +302,7 @@ const ChatPage: React.FC = () => {
           overflow-hidden
         `}>
           {/* Tab Switcher */}
-          <div className="flex border-b border-neutral-200">
+          <div className="flex border-b border-[#64748B]/20">
             <button
               onClick={() => {
                 setViewMode('chat');
@@ -305,11 +311,11 @@ const ChatPage: React.FC = () => {
               }}
               className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
                 viewMode === 'chat'
-                  ? 'text-primary-600 border-b-2 border-primary-600'
-                  : 'text-neutral-600 hover:text-neutral-900'
+                  ? 'text-[#2563EB] border-b-2 border-[#2563EB]'
+                  : 'text-[#64748B] hover:text-[#1E293B]'
               }`}
             >
-              Chats
+              Obrolan
             </button>
             <button
               onClick={() => {
@@ -319,11 +325,11 @@ const ChatPage: React.FC = () => {
               }}
               className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
                 viewMode === 'group'
-                  ? 'text-primary-600 border-b-2 border-primary-600'
-                  : 'text-neutral-600 hover:text-neutral-900'
+                  ? 'text-[#2563EB] border-b-2 border-[#2563EB]'
+                  : 'text-[#64748B] hover:text-[#1E293B]'
               }`}
             >
-              Groups ({groups.length})
+              Grup ({groups.length})
             </button>
           </div>
 
@@ -339,15 +345,15 @@ const ChatPage: React.FC = () => {
             <div className="flex-1 overflow-y-auto p-2">
               {groups.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-full p-8 text-center">
-                  <svg className="w-16 h-16 text-neutral-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-16 h-16 text-[#64748B]/30 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                   </svg>
-                  <p className="text-neutral-500 text-sm mb-4">No groups yet</p>
+                  <p className="text-[#64748B] text-sm mb-4">Belum ada grup</p>
                   <button
                     onClick={() => setShowCreateGroup(true)}
-                    className="px-4 py-2 bg-primary-500 text-white rounded-lg text-sm hover:bg-primary-600 transition-colors"
+                    className="px-4 py-2 bg-[#2563EB] text-white rounded-lg text-sm hover:bg-[#3B82F6] transition-colors shadow-lg"
                   >
-                    Create Group
+                    Buat Grup
                   </button>
                 </div>
               ) : (
@@ -438,6 +444,22 @@ const ChatPage: React.FC = () => {
         contacts={contacts}
         onClose={() => setShowCreateGroup(false)}
         onGroupCreated={handleGroupCreated}
+      />
+
+      {/* Settings Modal */}
+      <SettingsModal
+        isOpen={showSettingsModal}
+        onClose={() => setShowSettingsModal(false)}
+        currentUser={{
+          username: currentUser?.username || '',
+          email: currentUser?.email || ''
+        }}
+      />
+
+      {/* Preferences Modal */}
+      <PreferencesModal
+        isOpen={showPreferencesModal}
+        onClose={() => setShowPreferencesModal(false)}
       />
     </div>
   );

@@ -176,7 +176,7 @@ const GroupInfoPanel: React.FC<GroupInfoPanelProps> = ({
                           )}
                         </div>
                         <p className={`text-xs ${
-                          member.isOnline ? 'text-emerald-600' : 'text-neutral-500'
+                          member.isOnline ? 'text-accent-600' : 'text-neutral-500'
                         }`}>
                           {member.isOnline ? 'Online' : 'Offline'}
                         </p>

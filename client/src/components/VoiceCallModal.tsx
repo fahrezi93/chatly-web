@@ -395,11 +395,11 @@ const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
           </div>
           <h2 className="text-xl md:text-2xl font-semibold text-neutral-900 mb-2">{recipientName}</h2>
           <p className="text-neutral-500 text-sm md:text-base">
-            {callStatus === 'calling' && (isCaller ? 'Calling...' : 'Incoming call...')}
+            {callStatus === 'calling' && (isCaller ? 'Memanggil...' : 'Panggilan masuk...')}
             {callStatus === 'connected' && (
-              <span className="text-emerald-600 font-mono text-lg md:text-xl font-medium">{formatDuration(callDuration)}</span>
+              <span className="text-accent-600 font-mono text-lg md:text-xl font-medium">{formatDuration(callDuration)}</span>
             )}
-            {callStatus === 'ended' && 'Call ended'}
+            {callStatus === 'ended' && 'Panggilan berakhir'}
           </p>
         </div>
 
@@ -418,7 +418,7 @@ const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
               </button>
               <button 
                 onClick={handleAcceptCall}
-                className="rounded-full w-14 h-14 md:w-16 md:h-16 flex items-center justify-center bg-emerald-500 hover:bg-emerald-600 text-white transition-all duration-200 shadow-soft"
+                className="rounded-full w-14 h-14 md:w-16 md:h-16 flex items-center justify-center bg-accent-500 hover:bg-accent-600 text-white transition-all duration-200 shadow-soft"
               >
                 <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
@@ -428,7 +428,7 @@ const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
           )}
           
           {callStatus === 'calling' && !isCaller && isCallAccepted && (
-            <div className="text-neutral-400 animate-pulse text-sm">Connecting...</div>
+            <div className="text-neutral-400 animate-pulse text-sm">Menghubungkan...</div>
           )}
 
           {(callStatus === 'connected' || (callStatus === 'calling' && isCaller)) && (
