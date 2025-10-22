@@ -85,6 +85,23 @@ const activeCalls = new Map<string, string>();
 
 // ============ REST API Routes ============
 
+// Health check endpoint for Railway
+app.get('/', (req: Request, res: Response) => {
+  res.status(200).json({ 
+    status: 'ok', 
+    message: 'Chat API Server is running',
+    timestamp: new Date().toISOString()
+  });
+});
+
+app.get('/health', (req: Request, res: Response) => {
+  res.status(200).json({ 
+    status: 'ok',
+    uptime: process.uptime(),
+    mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
+  });
+});
+
 // Register endpoint
 app.post('/api/auth/register', async (req: Request, res: Response) => {
   try {
@@ -1145,7 +1162,11 @@ io.on('connection', (socket) => {
 });
 
 // Start server
-const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
-  console.log(`🚀 Server is running on port ${PORT}`);
+const PORT = parseInt(process.env.PORT || '5000', 10);
+const HOST = '0.0.0.0'; // Listen on all network interfaces for Railway
+
+server.listen(PORT, HOST, () => {
+  console.log(`🚀 Server is running on ${HOST}:${PORT}`);
+  console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🔗 MongoDB: ${mongoose.connection.readyState === 1 ? 'Connected' : 'Connecting...'}`);
 });
