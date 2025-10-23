@@ -8,6 +8,7 @@ import FilePreviewModal from './FilePreviewModal';
 import SearchBar, { SearchFilters } from './SearchBar';
 import UnreadSeparator from './UnreadSeparator';
 import GroupInfoPanel from './GroupInfoPanel';
+import UserInfoPanel from './UserInfoPanel';
 import { Message, User, Group } from '../types';
 import { 
   requestNotificationPermission, 
@@ -81,6 +82,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const [shouldAutoScroll, setShouldAutoScroll] = useState(false); // Start with false
   const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [showGroupInfo, setShowGroupInfo] = useState(false);
+  const [showUserInfo, setShowUserInfo] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const previousMessagesRef = useRef<Message[]>([]);
   const messageRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
@@ -88,6 +90,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const otherUserTypingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const emojiPickerRef = useRef<HTMLDivElement>(null);
+  const emojiButtonRef = useRef<HTMLButtonElement>(null);
 
   // Request notification permission on mount
   useEffect(() => {
@@ -113,6 +117,28 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       window.removeEventListener('blur', handleBlur);
     };
   }, [recipientId]);
+
+  // Close emoji picker when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        emojiPickerRef.current && 
+        !emojiPickerRef.current.contains(event.target as Node) &&
+        emojiButtonRef.current &&
+        !emojiButtonRef.current.contains(event.target as Node)
+      ) {
+        setShowEmojiPicker(false);
+      }
+    };
+
+    if (showEmojiPicker) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showEmojiPicker]);
 
   // Listen for incoming messages
   useEffect(() => {
@@ -889,11 +915,13 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 
   return (
     <div className="flex-1 bg-white flex h-full overflow-hidden">
+      {showUserInfo && <UserInfoPanel user={recipient} onClose={() => setShowUserInfo(false)} />}
+      {showGroupInfo && group && <GroupInfoPanel group={group} currentUserId={currentUserId} onClose={() => setShowGroupInfo(false)} />}
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col h-full overflow-hidden">
         {/* Header */}
         <div className="px-3 md:px-6 py-3 md:py-4 bg-white border-b border-[#64748B]/10 flex items-center justify-between flex-shrink-0">
-        <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1 overflow-hidden">
+        <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1 overflow-hidden cursor-pointer" onClick={() => viewMode === 'group' ? setShowGroupInfo(true) : setShowUserInfo(true)}>
           {viewMode === 'group' && group ? (
             <>
               <div className="w-10 h-10 bg-gradient-to-br from-[#10B981] to-[#059669] rounded-full flex items-center justify-center text-white font-semibold shadow-sm flex-shrink-0">
@@ -1134,14 +1162,14 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             </div>
           )}
           
-          {/* Emoji Picker */}
-          {showEmojiPicker && (
-            <div className="absolute bottom-20 md:bottom-24 right-3 md:right-6 z-50 shadow-large rounded-lg">
-              <EmojiPicker onEmojiClick={handleEmojiClick} />
-            </div>
-          )}
-          
-          <form onSubmit={handleSendMessage} className="p-2 md:p-4 flex-shrink-0">
+          <form onSubmit={handleSendMessage} className="p-2 md:p-4 flex-shrink-0 relative">
+            {/* Emoji Picker */}
+            {showEmojiPicker && (
+              <div ref={emojiPickerRef} className="absolute bottom-full mb-2 left-12 md:left-16 z-10">
+                <EmojiPicker onEmojiClick={handleEmojiClick} />
+              </div>
+            )}
+            
             <div className="flex gap-1.5 md:gap-2 items-center bg-neutral-100 rounded-2xl px-2 md:px-4 py-1.5 md:py-2 overflow-hidden">
               {/* File Upload Button */}
               <input
@@ -1171,6 +1199,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               
               {/* Emoji Button */}
               <button
+                ref={emojiButtonRef}
                 type="button"
                 onClick={() => setShowEmojiPicker(!showEmojiPicker)}
                 className="p-2 text-neutral-500 hover:text-neutral-700 hover:bg-white rounded-lg transition-all duration-200"

@@ -219,7 +219,7 @@ const ChatPage: React.FC = () => {
   return (
     <div className="h-screen flex flex-col bg-[#F8FAFC] overflow-hidden">
       {/* Top Header */}
-      <div className="bg-gradient-to-r from-[#2563EB] to-[#3B82F6] px-4 md:px-6 py-3 md:py-4 flex items-center justify-between shadow-lg flex-shrink-0">
+      <div className="bg-gradient-to-r from-[#2563EB] to-[#3B82F6] px-4 py-2 flex items-center justify-between shadow-md flex-shrink-0">
         <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1 overflow-hidden">
           {/* Mobile: Back button when chat is open */}
           {!showSidebar && (
@@ -237,9 +237,9 @@ const ChatPage: React.FC = () => {
           <img 
             src="/logo-chatly-putih.png" 
             alt="Chatly" 
-            className="h-7 w-auto flex-shrink-0"
+            className="h-6 w-auto flex-shrink-0"
           />
-          <h1 className="text-base md:text-lg font-bold text-white truncate">Chatly</h1>
+          <h1 className="text-md font-bold text-white truncate">Chatly</h1>
         </div>
         <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">
           <button
@@ -247,7 +247,7 @@ const ChatPage: React.FC = () => {
               setShowCallHistory(true);
               setMissedCallsCount(0); // Reset count when opened
             }}
-            className="px-2 md:px-3 py-2 text-white/90 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-200 flex items-center gap-1 md:gap-2 text-xs md:text-sm font-medium relative"
+            className="px-3 py-1.5 text-white/90 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-200 flex items-center gap-2 text-xs font-medium relative"
             title="Riwayat Panggilan"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -263,7 +263,7 @@ const ChatPage: React.FC = () => {
 
           <button
             onClick={() => setShowCreateGroup(true)}
-            className="px-2 md:px-3 py-2 text-white/90 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-200 flex items-center gap-1 md:gap-2 text-xs md:text-sm font-medium"
+            className="px-3 py-1.5 text-white/90 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-200 flex items-center gap-2 text-xs font-medium"
             title="Buat Grup"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

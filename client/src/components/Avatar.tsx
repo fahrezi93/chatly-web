@@ -3,14 +3,15 @@ import React from 'react';
 interface AvatarProps {
   username: string;
   isOnline?: boolean;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'sm' | 'md' | 'lg' | 'xl';
 }
 
 const Avatar: React.FC<AvatarProps> = ({ username, isOnline = false, size = 'md' }) => {
   const sizeClasses = {
     sm: 'w-8 h-8 text-xs',
     md: 'w-10 h-10 text-sm',
-    lg: 'w-14 h-14 text-xl'
+    lg: 'w-14 h-14 text-xl',
+    xl: 'w-24 h-24 text-3xl'
   };
 
   const initial = username.charAt(0).toUpperCase();
