@@ -250,9 +250,35 @@ app.get('/api/users/search/:username', async (req: Request, res: Response) => {
 });
 
 // Admin endpoint to verify a user
+// Admin endpoint to verify/unverify user
 app.post('/api/admin/verify-user', async (req: Request, res: Response) => {
   try {
     const { username, isVerified } = req.body;
+    
+    console.log('Verify user request:', { username, isVerified });
+    
+    const user = await User.findOne({ username: username.toLowerCase() });
+    
+    if (!user) {
+      console.log('User not found:', username);
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    user.isVerified = isVerified !== undefined ? isVerified : true;
+    await user.save();
+    
+    console.log('User verification status updated:', { username: user.username, isVerified: user.isVerified });
+    res.json({ message: 'User verification status updated', user: { username: user.username, isVerified: user.isVerified } });
+  } catch (error) {
+    console.error('Verify user error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Admin endpoint to set admin status
+app.post('/api/admin/set-admin', async (req: Request, res: Response) => {
+  try {
+    const { username, isAdmin } = req.body;
     
     const user = await User.findOne({ username: username.toLowerCase() });
     
@@ -260,12 +286,110 @@ app.post('/api/admin/verify-user', async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'User not found' });
     }
     
-    user.isVerified = isVerified !== undefined ? isVerified : true;
+    user.isAdmin = isAdmin !== undefined ? isAdmin : true;
     await user.save();
     
-    res.json({ message: 'User verification status updated', user: { username: user.username, isVerified: user.isVerified } });
+    res.json({ message: 'User admin status updated', user: { username: user.username, isAdmin: user.isAdmin } });
   } catch (error) {
-    console.error('Verify user error:', error);
+    console.error('Set admin error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Admin endpoint to ban/unban user
+app.post('/api/admin/ban-user', async (req: Request, res: Response) => {
+  try {
+    const { userId, isBanned } = req.body;
+    
+    console.log('Ban user request:', { userId, isBanned });
+    
+    const user = await User.findById(userId);
+    
+    if (!user) {
+      console.log('User not found:', userId);
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    user.isBanned = isBanned !== undefined ? isBanned : true;
+    await user.save();
+    
+    console.log('User ban status updated:', { username: user.username, isBanned: user.isBanned });
+    res.json({ message: 'User ban status updated', user: { _id: user._id, username: user.username, isBanned: user.isBanned } });
+  } catch (error) {
+    console.error('Ban user error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Admin endpoint to get all users with stats
+app.get('/api/admin/users', async (req: Request, res: Response) => {
+  try {
+    const users = await User.find({}, { password: 0 }).sort({ createdAt: -1 });
+    res.json(users);
+  } catch (error) {
+    console.error('Get all users error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Admin endpoint to get dashboard statistics
+app.get('/api/admin/stats', async (req: Request, res: Response) => {
+  try {
+    const totalUsers = await User.countDocuments();
+    const totalMessages = await Message.countDocuments();
+    const totalGroups = await Group.countDocuments();
+    const onlineUsers = await User.countDocuments({ isOnline: true });
+    const verifiedUsers = await User.countDocuments({ isVerified: true });
+    const bannedUsers = await User.countDocuments({ isBanned: true });
+    
+    // Get recent users (last 7 days)
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const newUsers = await User.countDocuments({ createdAt: { $gte: sevenDaysAgo } });
+    
+    // Get messages today
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const messagesToday = await Message.countDocuments({ createdAt: { $gte: today } });
+    
+    res.json({
+      totalUsers,
+      totalMessages,
+      totalGroups,
+      onlineUsers,
+      verifiedUsers,
+      bannedUsers,
+      newUsers,
+      messagesToday
+    });
+  } catch (error) {
+    console.error('Get stats error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Admin endpoint to delete user
+// Admin endpoint to delete user
+app.delete('/api/admin/users/:userId', async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+    
+    console.log('Delete user request:', userId);
+    
+    const user = await User.findByIdAndDelete(userId);
+    
+    if (!user) {
+      console.log('User not found:', userId);
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Delete all messages from this user
+    await Message.deleteMany({ senderId: userId });
+    
+    console.log('User and messages deleted:', user.username);
+    res.json({ message: 'User deleted successfully' });
+  } catch (error) {
+    console.error('Delete user error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });

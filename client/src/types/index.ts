@@ -9,6 +9,8 @@ export interface User {
   bio?: string;
   status?: string;
   isVerified?: boolean;
+  isAdmin?: boolean;
+  isBanned?: boolean;
 }
 
 export interface Reaction {

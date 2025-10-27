@@ -26,6 +26,7 @@ const ChatPage: React.FC = () => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const hasEmittedUserConnected = React.useRef(false);
   const [lastMessages, setLastMessages] = useState<{ [key: string]: Message }>({});
+  const [isLoadingContacts, setIsLoadingContacts] = useState(true);
   
   // Group states
   const [groups, setGroups] = useState<Group[]>([]);
@@ -66,17 +67,34 @@ const ChatPage: React.FC = () => {
 
     setCurrentUserId(userId);
     loadCurrentUser(userId);
+    
+    // Load contacts and groups immediately with userId
+    loadContacts(userId);
+    loadGroups(userId);
+    loadMissedCallsCount(userId);
 
     // Only proceed if socket is ready
     if (!socket || !isConnected) {
       return;
     }
 
-    // Emit user-connected event only once
-    if (!hasEmittedUserConnected.current) {
+    // Emit user-connected event only once per connection
+    if (!hasEmittedUserConnected.current && socket.connected) {
       socket.emit('user-connected', userId);
       hasEmittedUserConnected.current = true;
     }
+
+    // Reset flag on disconnect to allow reconnection
+    const handleDisconnect = () => {
+      hasEmittedUserConnected.current = false;
+    };
+
+    const handleReconnect = () => {
+      socket.emit('user-connected', userId);
+    };
+
+    socket.on('disconnect', handleDisconnect);
+    socket.on('reconnect', handleReconnect);
 
     // Listen for user status changes
     const handleUserStatusChanged = ({ userId: changedUserId, isOnline }: { userId: string; isOnline: boolean }) => {
@@ -106,62 +124,77 @@ const ChatPage: React.FC = () => {
       }
     };
 
+    socket.on('disconnect', handleDisconnect);
+    socket.on('reconnect', handleReconnect);
     socket.on('user-status-changed', handleUserStatusChanged);
     socket.on('incoming-call', handleIncomingCall);
     socket.on('call-ended', handleCallEnded);
 
-    // Load contacts, groups, and missed calls
-    loadContacts();
-    loadGroups(userId);
-    loadMissedCallsCount(userId);
-
     // Cleanup listeners on unmount
     return () => {
+      socket.off('disconnect', handleDisconnect);
+      socket.off('reconnect', handleReconnect);
       socket.off('user-status-changed', handleUserStatusChanged);
       socket.off('incoming-call', handleIncomingCall);
       socket.off('call-ended', handleCallEnded);
     };
   }, [socket, isConnected, navigate]);
 
+  // Reload contacts when window gains focus (e.g., returning from admin panel)
+  useEffect(() => {
+    const handleFocus = () => {
+      if (currentUserId) {
+        loadContacts(currentUserId);
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [currentUserId]);
+
   const loadCurrentUser = async (userId: string) => {
     try {
       const response = await axios.get(`${API_URL}/api/users/${userId}`);
       setCurrentUser(response.data);
     } catch (error) {
-      // Error loading user
+      console.error('Error loading current user:', error);
     }
   };
 
-  const loadContacts = async () => {
+  const loadContacts = async (userId: string) => {
+    setIsLoadingContacts(true);
     try {
-      const response = await axios.get(`${API_URL}/api/users`);
+      // Add cache buster to ensure fresh data
+      const timestamp = new Date().getTime();
+      const response = await axios.get(`${API_URL}/api/users?_=${timestamp}`);
       const allUsers = response.data;
       
-      // Filter users who have chat history with current user
-      const contactsWithHistory: User[] = [];
+      // Filter out current user and load all other users as contacts
+      const otherUsers = allUsers.filter((user: User) => user._id !== userId);
+      
+      // Load last messages for all contacts
       const lastMessagesMap: { [key: string]: Message } = {};
       
-      for (const user of allUsers) {
-        if (user._id !== currentUserId) {
-          try {
-            const messagesResponse = await axios.get(`${API_URL}/api/messages/${currentUserId}/${user._id}`);
-            const messages = messagesResponse.data;
-            
-            // Only add to contacts if there's chat history
-            if (messages.length > 0) {
-              contactsWithHistory.push(user);
-              lastMessagesMap[user._id] = messages[messages.length - 1];
-            }
-          } catch (error) {
-            // Skip this user if error loading messages
+      for (const user of otherUsers) {
+        try {
+          const messagesResponse = await axios.get(`${API_URL}/api/messages/${userId}/${user._id}?_=${timestamp}`);
+          const messages = messagesResponse.data;
+          
+          if (messages.length > 0) {
+            lastMessagesMap[user._id] = messages[messages.length - 1];
           }
+        } catch (error) {
+          // Skip if error loading messages for this user
         }
       }
       
-      setContacts(contactsWithHistory);
+      setContacts(otherUsers);
       setLastMessages(lastMessagesMap);
+      console.log(`✅ Loaded ${otherUsers.length} contacts`);
     } catch (error) {
-      // Error loading contacts
+      console.error('Error loading contacts:', error);
+    } finally {
+      setIsLoadingContacts(false);
     }
   };
 
@@ -417,13 +450,22 @@ const ChatPage: React.FC = () => {
 
           {/* Content based on view mode */}
           {viewMode === 'chat' ? (
-            <ContactList
-              contacts={contacts}
-              selectedUserId={selectedUserId}
-              onSelectContact={handleSelectChat}
-              currentUserId={currentUserId}
-              lastMessages={lastMessages}
-            />
+            isLoadingContacts ? (
+              <div className="flex items-center justify-center h-full">
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+                  <p className="mt-4 text-sm text-gray-600">Memuat kontak...</p>
+                </div>
+              </div>
+            ) : (
+              <ContactList
+                contacts={contacts}
+                selectedUserId={selectedUserId}
+                onSelectContact={handleSelectChat}
+                currentUserId={currentUserId}
+                lastMessages={lastMessages}
+              />
+            )
           ) : (
             <div className="flex-1 overflow-y-auto p-2">
               {groups.length === 0 ? (
@@ -517,7 +559,7 @@ const ChatPage: React.FC = () => {
         onClose={() => setShowProfileModal(false)}
         onUpdate={(updatedUser) => {
           setCurrentUser(updatedUser);
-          loadContacts(); // Reload to show updated profile in contacts
+          loadContacts(currentUserId); // Reload to show updated profile in contacts
         }}
       />
 

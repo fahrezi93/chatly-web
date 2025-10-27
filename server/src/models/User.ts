@@ -11,6 +11,8 @@ export interface IUser extends Document {
   bio?: string;
   status?: string;
   isVerified?: boolean;
+  isAdmin?: boolean;
+  isBanned?: boolean;
 }
 
 const UserSchema: Schema = new Schema({
@@ -66,6 +68,14 @@ const UserSchema: Schema = new Schema({
     maxlength: 100
   },
   isVerified: {
+    type: Boolean,
+    default: false
+  },
+  isAdmin: {
+    type: Boolean,
+    default: false
+  },
+  isBanned: {
     type: Boolean,
     default: false
   }
