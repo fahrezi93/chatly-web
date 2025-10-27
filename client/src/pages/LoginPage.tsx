@@ -13,7 +13,8 @@ const LoginPage: React.FC = () => {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    username: ''
+    username: '',
+    displayName: ''
   });
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
@@ -86,14 +87,27 @@ const LoginPage: React.FC = () => {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {!isLogin && (
-            <Input
-              label="Nama Pengguna"
-              type="text"
-              placeholder="Masukkan nama pengguna"
-              value={formData.username}
-              onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-              required
-            />
+            <>
+              <Input
+                label="Username"
+                type="text"
+                placeholder="contoh: fahrezi93 (huruf kecil, angka, _)"
+                value={formData.username}
+                onChange={(e) => setFormData({ ...formData, username: e.target.value.toLowerCase() })}
+                required
+                pattern="[a-z0-9_]{3,20}"
+                title="Username harus 3-20 karakter, hanya huruf kecil, angka, dan underscore"
+              />
+              <Input
+                label="Nama Tampilan"
+                type="text"
+                placeholder="Nama yang akan ditampilkan (bisa pakai spasi & emoji)"
+                value={formData.displayName}
+                onChange={(e) => setFormData({ ...formData, displayName: e.target.value })}
+                required
+                maxLength={50}
+              />
+            </>
           )}
 
           <Input

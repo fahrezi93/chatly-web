@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import Avatar from './Avatar';
+import VerifiedBadge from './VerifiedBadge';
 import { User } from '../types';
 
 interface ProfileDropdownProps {
@@ -31,8 +32,11 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ user, onOpenProfile, 
         onClick={() => setIsOpen(!isOpen)}
         className="flex items-center gap-2 px-3 py-2 hover:bg-white/10 rounded-lg transition-all duration-200"
       >
-        <Avatar username={user.username} isOnline={user.isOnline} size="sm" />
-        <span className="text-sm font-semibold text-white hidden sm:inline">{user.username}</span>
+        <Avatar username={user.username} isOnline={user.isOnline} size="sm" profilePicture={user.profilePicture} isVerified={user.isVerified} />
+        <div className="flex items-center gap-1">
+          <span className="text-sm font-semibold text-white hidden sm:inline">{user.displayName || user.username}</span>
+          {user.isVerified && <VerifiedBadge size="sm" />}
+        </div>
         <svg 
           className={`w-4 h-4 text-white/80 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} 
           fill="none" 
@@ -48,10 +52,13 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ user, onOpenProfile, 
           {/* User Info */}
           <div className="px-4 py-3 border-b border-[#64748B]/10">
             <div className="flex items-center gap-3">
-              <Avatar username={user.username} isOnline={user.isOnline} size="md" />
+              <Avatar username={user.username} isOnline={user.isOnline} size="md" profilePicture={user.profilePicture} isVerified={user.isVerified} />
               <div className="flex-1 min-w-0">
-                <p className="font-bold text-[#1E293B] text-sm truncate">{user.username}</p>
-                <p className="text-xs text-[#64748B] truncate">{user.email}</p>
+                <div className="flex items-center gap-1">
+                  <p className="font-bold text-[#1E293B] text-sm truncate">{user.displayName || user.username}</p>
+                  {user.isVerified && <VerifiedBadge size="sm" />}
+                </div>
+                <p className="text-xs text-[#64748B] truncate">@{user.username}</p>
               </div>
             </div>
             {user.status && (

@@ -1,12 +1,14 @@
 export interface User {
   _id: string;
   username: string;
+  displayName: string;
   email: string;
   isOnline: boolean;
   lastSeen: Date;
   profilePicture?: string;
   bio?: string;
   status?: string;
+  isVerified?: boolean;
 }
 
 export interface Reaction {
@@ -23,6 +25,7 @@ export interface Message {
   groupId?: string;
   content: string;
   createdAt: Date;
+  timestamp?: Date;
   isRead?: boolean;
   status?: 'sending' | 'sent' | 'delivered' | 'read';
   messageType?: 'text' | 'image' | 'file';
@@ -54,6 +57,7 @@ export interface AuthResponse {
   user: {
     id: string;
     username: string;
+    displayName: string;
     email: string;
   };
 }

@@ -163,7 +163,7 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
                         onChange={() => toggleMember(contact._id)}
                         className="w-4 h-4 text-primary-600 border-neutral-300 rounded focus:ring-2 focus:ring-primary-500"
                       />
-                      <Avatar username={contact.username} isOnline={contact.isOnline} size="sm" />
+                      <Avatar username={contact.username} isOnline={contact.isOnline} size="sm" profilePicture={contact.profilePicture} isVerified={contact.isVerified} />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-neutral-900 truncate">
                           {contact.username}

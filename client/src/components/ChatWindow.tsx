@@ -9,6 +9,7 @@ import SearchBar, { SearchFilters } from './SearchBar';
 import UnreadSeparator from './UnreadSeparator';
 import GroupInfoPanel from './GroupInfoPanel';
 import UserInfoPanel from './UserInfoPanel';
+import VerifiedBadge from './VerifiedBadge';
 import { Message, User, Group } from '../types';
 import { 
   requestNotificationPermission, 
@@ -28,6 +29,7 @@ interface ChatWindowProps {
   group?: Group | null;
   onStartCall: (recipientId: string) => void;
   viewMode?: 'chat' | 'group';
+  onMessageUpdate?: (message: Message, otherUserId: string) => void;
 }
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -63,7 +65,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   recipient,
   group = null,
   onStartCall,
-  viewMode = 'chat'
+  viewMode = 'chat',
+  onMessageUpdate
 }) => {
   const { socket } = useSocket();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -79,19 +82,19 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   const [filteredMessages, setFilteredMessages] = useState<Message[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [showSearchBar, setShowSearchBar] = useState(false);
-  const [shouldAutoScroll, setShouldAutoScroll] = useState(false); // Start with false
-  const [isInitialLoad, setIsInitialLoad] = useState(true);
   const [showGroupInfo, setShowGroupInfo] = useState(false);
   const [showUserInfo, setShowUserInfo] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const previousMessagesRef = useRef<Message[]>([]);
   const messageRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
+  const firstUnreadMessageRef = useRef<HTMLDivElement | null>(null);
   const isWindowFocused = useRef(true);
   const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const otherUserTypingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const emojiPickerRef = useRef<HTMLDivElement>(null);
   const emojiButtonRef = useRef<HTMLButtonElement>(null);
+  const hasScrolledToUnread = useRef(false);
 
   // Request notification permission on mount
   useEffect(() => {
@@ -152,6 +155,11 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       if (messageSenderId === recipientId) {
         setMessages((prev) => [...prev, message]);
         
+        // Update last message in parent component
+        if (onMessageUpdate) {
+          onMessageUpdate(message, recipientId);
+        }
+        
         // Mark message as read immediately if chat is open
         if (socket && (message._id || message.id)) {
           socket.emit('mark-as-read', {
@@ -164,7 +172,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         // Show notification if window is not focused
         if (!isWindowFocused.current && recipient) {
           showNotification(
-            `Pesan baru dari ${recipient.username}`,
+            `Pesan baru dari ${recipient.displayName || recipient.username}`,
             {
               body: message.content,
               tag: messageSenderId
@@ -181,11 +189,21 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         // Still increment unread and play sound
         playNotificationSound();
         incrementUnreadCount(messageSenderId);
+        
+        // Update last message in parent component for other contacts
+        if (onMessageUpdate) {
+          onMessageUpdate(message, messageSenderId);
+        }
       }
     });
 
     socket.on('message-sent', (message: Message) => {
       setMessages((prev) => [...prev, message]);
+      
+      // Update last message in parent component
+      if (onMessageUpdate && recipientId) {
+        onMessageUpdate(message, recipientId);
+      }
     });
 
     // Listen for messages read
@@ -348,7 +366,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       socket.off('reaction-added');
       socket.off('reaction-removed');
     };
-  }, [socket, recipientId, recipient, currentUserId, viewMode, groupId, group]);
+  }, [socket, recipientId, recipient, currentUserId, viewMode, groupId, group, onMessageUpdate]);
 
   // Load messages when recipient or group changes
   useEffect(() => {
@@ -360,52 +378,14 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
           const loadedMessages = response.data;
           setMessages(loadedMessages);
           
-          // For group messages, scroll to bottom with smooth animation
-          setTimeout(() => {
-            const container = document.querySelector('.messages-container');
-            if (container) {
-              // Start from bottom with smooth scroll
-              container.scrollTop = container.scrollHeight;
-            }
-            setShouldAutoScroll(true);
-            setIsInitialLoad(false);
-          }, 150);
-        } else if (recipientId) {
-          // Load private messages
+          // No auto-scroll - let user scroll manually
+        } else if (recipientId && currentUserId) {
+          // Load private messages - ensure currentUserId is not empty
           const response = await axios.get(`${API_URL}/api/messages/${currentUserId}/${recipientId}`);
           const loadedMessages = response.data;
           setMessages(loadedMessages);
           
-          // Find first unread message
-          const firstUnreadMessage = loadedMessages.find((msg: Message) => 
-            !msg.isRead && msg.receiverId === currentUserId
-          );
-          
-          // Scroll to first unread message or bottom if no unread messages
-          setTimeout(() => {
-            const container = document.querySelector('.messages-container');
-            if (firstUnreadMessage) {
-              const messageId = firstUnreadMessage._id || firstUnreadMessage.id;
-              const element = messageRefs.current[messageId];
-              if (element && container) {
-                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                // Add highlight effect to show this is the first unread message
-                element.classList.add('highlight-message');
-                setTimeout(() => {
-                  element.classList.remove('highlight-message');
-                }, 2000);
-                // Enable auto-scroll after scrolling to unread message
-                setShouldAutoScroll(true);
-              }
-            } else {
-              // No unread messages, scroll to bottom smoothly
-              if (container) {
-                container.scrollTop = container.scrollHeight;
-              }
-              setShouldAutoScroll(true);
-            }
-            setIsInitialLoad(false);
-          }, 150); // Small delay to ensure DOM is ready
+          // No auto-scroll - let user scroll manually
           
           // Clear unread count when opening chat
           clearUnreadCount(recipientId);
@@ -428,59 +408,67 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       }
     };
 
-    if (recipientId || groupId) {
+    // Only load messages if we have the required IDs
+    if ((recipientId && currentUserId) || (groupId && viewMode === 'group')) {
       // Reset states when switching chats
       setReplyingTo(null);
-      setShouldAutoScroll(false); // Disable auto-scroll initially
-      setIsInitialLoad(true); // Mark as initial load
       previousMessagesRef.current = [];
+      hasScrolledToUnread.current = false; // Reset scroll flag when switching chats
+      firstUnreadMessageRef.current = null; // Reset unread ref
       
       loadMessages();
     }
   }, [recipientId, groupId, viewMode, currentUserId, socket]);
 
-  // Auto scroll to bottom - only when new messages are added, not when reactions change
+  // Auto-scroll to first unread message or bottom on initial load (without animation)
   useEffect(() => {
-    // Skip auto-scroll during initial load
-    if (isInitialLoad) {
-      previousMessagesRef.current = [...messages];
-      return;
+    if (messages.length > 0 && !hasScrolledToUnread.current) {
+      // Use setTimeout to ensure DOM is fully rendered
+      setTimeout(() => {
+        if (firstUnreadMessageRef.current) {
+          // Scroll to first unread message instantly (no smooth animation)
+          firstUnreadMessageRef.current.scrollIntoView({ 
+            behavior: 'auto', // Use 'auto' instead of 'smooth' for instant scroll
+            block: 'start' 
+          });
+        } else if (messagesEndRef.current) {
+          // If no unread messages, scroll to bottom instantly
+          messagesEndRef.current.scrollIntoView({ 
+            behavior: 'auto', // Use 'auto' instead of 'smooth' for instant scroll
+            block: 'end' 
+          });
+        }
+        hasScrolledToUnread.current = true; // Mark as scrolled
+      }, 100);
     }
+  }, [messages]);
 
-    const previousMessages = previousMessagesRef.current;
-    const currentMessages = messages;
-    
-    // Check if there are new messages (by comparing message IDs)
-    const hasNewMessages = currentMessages.length > previousMessages.length &&
-      currentMessages.some(msg => 
-        !previousMessages.find(prevMsg => 
-          (prevMsg._id || prevMsg.id) === (msg._id || msg.id)
-        )
-      );
-    
-    // Only auto-scroll if there are new messages and shouldAutoScroll is true
-    if (hasNewMessages && shouldAutoScroll) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  // Auto-scroll to bottom when user sends a new message
+  useEffect(() => {
+    // Only auto-scroll if there are messages and previous messages exist
+    if (messages.length > 0 && previousMessagesRef.current.length > 0) {
+      const lastMessage = messages[messages.length - 1];
+      const lastMessageSenderId = typeof lastMessage.senderId === 'object' && lastMessage.senderId && '_id' in lastMessage.senderId
+        ? lastMessage.senderId._id
+        : lastMessage.senderId;
+      
+      // If the last message is from current user (user just sent a message), scroll to bottom
+      if (lastMessageSenderId === currentUserId && messagesEndRef.current) {
+        setTimeout(() => {
+          messagesEndRef.current?.scrollIntoView({ 
+            behavior: 'smooth', // Use smooth scroll for better UX when sending
+            block: 'end' 
+          });
+        }, 50);
+      }
     }
     
     // Update previous messages reference
-    previousMessagesRef.current = [...currentMessages];
-  }, [messages, shouldAutoScroll, isInitialLoad]);
+    previousMessagesRef.current = messages;
+  }, [messages, currentUserId]);
 
-  // Detect scroll position to determine if auto-scroll should be enabled
-  useEffect(() => {
-    const messagesContainer = document.querySelector('.messages-container');
-    if (!messagesContainer) return;
-
-    const handleScroll = () => {
-      const { scrollTop, scrollHeight, clientHeight } = messagesContainer;
-      const isNearBottom = scrollHeight - scrollTop - clientHeight < 100; // 100px threshold
-      setShouldAutoScroll(isNearBottom);
-    };
-
-    messagesContainer.addEventListener('scroll', handleScroll);
-    return () => messagesContainer.removeEventListener('scroll', handleScroll);
-  }, []);
+  // Disabled auto-scroll for better UX
+  // User can manually scroll to see messages at their own pace
 
   const handleTyping = (e: React.ChangeEvent<HTMLInputElement>) => {
     setNewMessage(e.target.value);
@@ -620,10 +608,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     setNewMessage('');
     setReplyingTo(null);
     setShowEmojiPicker(false);
-    
-    // Ensure auto-scroll is enabled when sending a message
-    setShouldAutoScroll(true);
-    setIsInitialLoad(false); // Mark as not initial load anymore
   };
 
   const handleReply = (message: Message) => {
@@ -936,9 +920,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
             </>
           ) : recipient ? (
             <>
-              <Avatar username={recipient.username} isOnline={recipient.isOnline} />
+              <Avatar username={recipient.username} isOnline={recipient.isOnline} profilePicture={recipient.profilePicture} isVerified={recipient.isVerified} />
               <div className="min-w-0 flex-1 overflow-hidden">
-                <h3 className="text-[#1E293B] font-bold text-base truncate">{recipient.username}</h3>
+                <div className="flex items-center gap-1">
+                  <h3 className="text-[#1E293B] font-bold text-base truncate">{recipient.displayName || recipient.username}</h3>
+                  {recipient.isVerified && <VerifiedBadge size="sm" />}
+                </div>
                 <p className={`text-xs flex items-center gap-1 truncate ${
                   recipient.isOnline ? 'text-[#10B981]' : 'text-[#64748B]'
                 }`}>
@@ -1071,7 +1058,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               
               {/* Unread Separator - Show before first unread message */}
               {isFirstUnreadMessage && (
-                <UnreadSeparator />
+                <div ref={firstUnreadMessageRef}>
+                  <UnreadSeparator />
+                </div>
               )}
               
               {/* Search result indicator */}

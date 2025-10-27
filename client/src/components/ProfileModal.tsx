@@ -15,7 +15,7 @@ interface ProfileModalProps {
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, user, onClose, onUpdate }) => {
-  const [username, setUsername] = useState(user.username);
+  const [displayName, setDisplayName] = useState(user.displayName);
   const [email, setEmail] = useState(user.email);
   const [bio, setBio] = useState(user.bio || '');
   const [status, setStatus] = useState(user.status || '');
@@ -45,7 +45,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, user, onClose, onUp
 
     try {
       const formData = new FormData();
-      formData.append('username', username);
+      formData.append('displayName', displayName);
       formData.append('email', email);
       formData.append('bio', bio);
       formData.append('status', status);
@@ -95,7 +95,9 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, user, onClose, onUp
             <div className="relative">
               {previewUrl ? (
                 <img
-                  src={previewUrl.startsWith('blob:') || previewUrl.startsWith('data:') ? previewUrl : `${API_URL}${previewUrl}`}
+                  src={previewUrl.startsWith('blob:') || previewUrl.startsWith('data:') || previewUrl.startsWith('http://') || previewUrl.startsWith('https://') 
+                    ? previewUrl 
+                    : `${API_URL}${previewUrl}`}
                   alt="Profile"
                   className="w-20 h-20 md:w-24 md:h-24 rounded-full object-cover shadow-soft"
                   onError={(e) => {
@@ -104,7 +106,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, user, onClose, onUp
                   crossOrigin="anonymous"
                 />
               ) : (
-                <Avatar username={username} size="lg" />
+                <Avatar username={user.username} size="xl" profilePicture={user.profilePicture} />
               )}
               <label
                 htmlFor="profilePicture"
@@ -126,14 +128,24 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, user, onClose, onUp
             <p className="text-xs text-neutral-500 mt-2">Klik untuk ubah foto</p>
           </div>
 
-          {/* Username */}
+          {/* Username (Read-only) */}
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 mb-2">Username</label>
+            <div className="w-full px-4 py-3 bg-neutral-100 border border-neutral-300 rounded-xl text-neutral-500 text-sm flex items-center gap-2">
+              <span>@{user.username}</span>
+              <span className="text-xs bg-neutral-200 px-2 py-0.5 rounded">Tidak dapat diubah</span>
+            </div>
+          </div>
+
+          {/* Display Name */}
           <Input
-            label="Nama Pengguna"
+            label="Nama Tampilan"
             type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            placeholder="Nama pengguna Anda"
+            value={displayName}
+            onChange={(e) => setDisplayName(e.target.value)}
+            placeholder="Nama yang akan ditampilkan"
             required
+            maxLength={50}
           />
 
           {/* Email */}

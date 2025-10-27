@@ -10,7 +10,8 @@ import ProfileModal from '../components/ProfileModal';
 import CreateGroupModal from '../components/CreateGroupModal';
 import SettingsModal from '../components/SettingsModal';
 import PreferencesModal from '../components/PreferencesModal';
-import { User, Group } from '../types';
+import AddContactModal from '../components/AddContactModal';
+import { User, Group, Message } from '../types';
 import { getAuthData, clearAuthData } from '../utils/auth';
 import { useSocket } from '../context/SocketContext';
 
@@ -24,11 +25,13 @@ const ChatPage: React.FC = () => {
   const [currentUserId, setCurrentUserId] = useState<string>('');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const hasEmittedUserConnected = React.useRef(false);
+  const [lastMessages, setLastMessages] = useState<{ [key: string]: Message }>({});
   
   // Group states
   const [groups, setGroups] = useState<Group[]>([]);
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const [showCreateGroup, setShowCreateGroup] = useState(false);
+  const [showAddContact, setShowAddContact] = useState(false);
   
   // Voice call states
   const [isCallModalOpen, setIsCallModalOpen] = useState(false);
@@ -95,8 +98,17 @@ const ChatPage: React.FC = () => {
       setIsCallModalOpen(true);
     };
 
+    // Listen for call ended to update missed calls count
+    const handleCallEnded = ({ status, receiverId }: { status: string; receiverId: string }) => {
+      if (status === 'missed' && receiverId === userId) {
+        // Increment missed calls count
+        setMissedCallsCount(prev => prev + 1);
+      }
+    };
+
     socket.on('user-status-changed', handleUserStatusChanged);
     socket.on('incoming-call', handleIncomingCall);
+    socket.on('call-ended', handleCallEnded);
 
     // Load contacts, groups, and missed calls
     loadContacts();
@@ -107,6 +119,7 @@ const ChatPage: React.FC = () => {
     return () => {
       socket.off('user-status-changed', handleUserStatusChanged);
       socket.off('incoming-call', handleIncomingCall);
+      socket.off('call-ended', handleCallEnded);
     };
   }, [socket, isConnected, navigate]);
 
@@ -122,7 +135,31 @@ const ChatPage: React.FC = () => {
   const loadContacts = async () => {
     try {
       const response = await axios.get(`${API_URL}/api/users`);
-      setContacts(response.data);
+      const allUsers = response.data;
+      
+      // Filter users who have chat history with current user
+      const contactsWithHistory: User[] = [];
+      const lastMessagesMap: { [key: string]: Message } = {};
+      
+      for (const user of allUsers) {
+        if (user._id !== currentUserId) {
+          try {
+            const messagesResponse = await axios.get(`${API_URL}/api/messages/${currentUserId}/${user._id}`);
+            const messages = messagesResponse.data;
+            
+            // Only add to contacts if there's chat history
+            if (messages.length > 0) {
+              contactsWithHistory.push(user);
+              lastMessagesMap[user._id] = messages[messages.length - 1];
+            }
+          } catch (error) {
+            // Skip this user if error loading messages
+          }
+        }
+      }
+      
+      setContacts(contactsWithHistory);
+      setLastMessages(lastMessagesMap);
     } catch (error) {
       // Error loading contacts
     }
@@ -140,9 +177,20 @@ const ChatPage: React.FC = () => {
   const loadMissedCallsCount = async (userId: string) => {
     try {
       const response = await axios.get(`${API_URL}/api/call-history/${userId}`);
-      const missedCalls = response.data.filter((call: any) => 
-        call.status === 'missed' && call.receiverId === userId
-      );
+      
+      // Get last viewed timestamp from localStorage
+      const lastViewedKey = `callHistory_lastViewed_${userId}`;
+      const lastViewed = localStorage.getItem(lastViewedKey);
+      const lastViewedTime = lastViewed ? new Date(lastViewed).getTime() : 0;
+      
+      // Only count missed calls that occurred after last viewed time
+      const missedCalls = response.data.filter((call: any) => {
+        const callTime = new Date(call.createdAt).getTime();
+        return call.status === 'missed' && 
+               call.receiverId === userId && 
+               callTime > lastViewedTime;
+      });
+      
       setMissedCallsCount(missedCalls.length);
     } catch (error) {
       // Error loading missed calls
@@ -193,6 +241,25 @@ const ChatPage: React.FC = () => {
     setViewMode('group');
     // Hide sidebar on mobile when group selected
     setShowSidebar(false);
+  };
+
+  // Handler to update last message when a message is sent or received
+  const handleMessageUpdate = async (message: Message, otherUserId: string) => {
+    setLastMessages(prev => ({
+      ...prev,
+      [otherUserId]: message
+    }));
+    
+    // If this is the first message with this user, add them to contacts
+    const isInContacts = contacts.some(c => c._id === otherUserId);
+    if (!isInContacts) {
+      try {
+        const response = await axios.get(`${API_URL}/api/users/${otherUserId}`);
+        setContacts(prev => [...prev, response.data]);
+      } catch (error) {
+        console.error('Error loading user:', error);
+      }
+    }
   };
 
   // Back to contacts (show sidebar on mobile)
@@ -246,6 +313,10 @@ const ChatPage: React.FC = () => {
             onClick={() => {
               setShowCallHistory(true);
               setMissedCallsCount(0); // Reset count when opened
+              
+              // Save current timestamp to localStorage
+              const lastViewedKey = `callHistory_lastViewed_${currentUserId}`;
+              localStorage.setItem(lastViewedKey, new Date().toISOString());
             }}
             className="px-3 py-1.5 text-white/90 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-200 flex items-center gap-2 text-xs font-medium relative"
             title="Riwayat Panggilan"
@@ -259,6 +330,17 @@ const ChatPage: React.FC = () => {
                 {missedCallsCount > 99 ? '99+' : missedCallsCount}
               </span>
             )}
+          </button>
+
+          <button
+            onClick={() => setShowAddContact(true)}
+            className="px-3 py-1.5 text-white/90 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-200 flex items-center gap-2 text-xs font-medium"
+            title="Tambah Kontak"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+            </svg>
+            <span className="hidden md:inline">Tambah</span>
           </button>
 
           <button
@@ -340,6 +422,7 @@ const ChatPage: React.FC = () => {
               selectedUserId={selectedUserId}
               onSelectContact={handleSelectChat}
               currentUserId={currentUserId}
+              lastMessages={lastMessages}
             />
           ) : (
             <div className="flex-1 overflow-y-auto p-2">
@@ -399,6 +482,7 @@ const ChatPage: React.FC = () => {
             group={selectedGroup}
             onStartCall={handleStartCall}
             viewMode={viewMode}
+            onMessageUpdate={handleMessageUpdate}
           />
         </div>
       </div>
@@ -435,6 +519,22 @@ const ChatPage: React.FC = () => {
           setCurrentUser(updatedUser);
           loadContacts(); // Reload to show updated profile in contacts
         }}
+      />
+
+      {/* Add Contact Modal */}
+      <AddContactModal
+        isOpen={showAddContact}
+        onClose={() => setShowAddContact(false)}
+        onContactAdded={(user) => {
+          // Add to contacts if not already there
+          if (!contacts.find(c => c._id === user._id)) {
+            setContacts(prev => [...prev, user]);
+          }
+          // Select the user to start chat
+          setSelectedUserId(user._id);
+          setViewMode('chat');
+        }}
+        currentUserId={currentUserId}
       />
 
       {/* Create Group Modal */}

@@ -105,7 +105,21 @@ app.get('/health', (req: Request, res: Response) => {
 // Register endpoint
 app.post('/api/auth/register', async (req: Request, res: Response) => {
   try {
-    const { username, email, password } = req.body;
+    const { username, displayName, email, password } = req.body;
+
+    // Validate username format
+    if (!/^[a-z0-9_]{3,20}$/.test(username)) {
+      return res.status(400).json({ 
+        message: 'Username must be 3-20 characters long and contain only lowercase letters, numbers, and underscores' 
+      });
+    }
+
+    // Validate displayName
+    if (!displayName || displayName.trim().length < 1 || displayName.trim().length > 50) {
+      return res.status(400).json({ 
+        message: 'Display name must be between 1 and 50 characters' 
+      });
+    }
 
     // Check if user already exists
     const existingUser = await User.findOne({ $or: [{ email }, { username }] });
@@ -118,7 +132,8 @@ app.post('/api/auth/register', async (req: Request, res: Response) => {
 
     // Create user
     const user = new User({
-      username,
+      username: username.toLowerCase(),
+      displayName: displayName.trim(),
       email,
       password: hashedPassword
     });
@@ -133,6 +148,7 @@ app.post('/api/auth/register', async (req: Request, res: Response) => {
       user: {
         id: user._id,
         username: user.username,
+        displayName: user.displayName,
         email: user.email
       }
     });
@@ -159,9 +175,17 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    // Update online status
-    user.isOnline = true;
-    await user.save();
+    // Migration: Set displayName to username if not exists (for old users)
+    // Update online status without running validators to avoid issues with legacy usernames
+    const updateData: any = { isOnline: true };
+    if (!user.displayName) {
+      updateData.displayName = user.username;
+    }
+    
+    await User.findByIdAndUpdate(user._id, updateData, { 
+      runValidators: false, // Skip validation to handle legacy usernames with spaces
+      new: true 
+    });
 
     // Generate JWT
     const token = jwt.sign({ userId: user._id }, JWT_SECRET, { expiresIn: '7d' });
@@ -171,6 +195,7 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
       user: {
         id: user._id,
         username: user.username,
+        displayName: user.displayName,
         email: user.email
       }
     });
@@ -184,9 +209,63 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
 app.get('/api/users', async (req: Request, res: Response) => {
   try {
     const users = await User.find({}, { password: 0 }).sort({ username: 1 });
-    res.json(users);
+    
+    // Migration: Set displayName to username if not exists (for old users)
+    const updatedUsers = users.map(user => {
+      if (!user.displayName) {
+        user.displayName = user.username;
+      }
+      return user;
+    });
+    
+    res.json(updatedUsers);
   } catch (error) {
     console.error('Get users error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Search user by username
+app.get('/api/users/search/:username', async (req: Request, res: Response) => {
+  try {
+    const { username } = req.params;
+    const searchUsername = username.toLowerCase().replace('@', '');
+    
+    const user = await User.findOne({ username: searchUsername }, { password: 0 });
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Migration: Set displayName to username if not exists (for old users)
+    if (!user.displayName) {
+      user.displayName = user.username;
+    }
+    
+    res.json(user);
+  } catch (error) {
+    console.error('Search user error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Admin endpoint to verify a user
+app.post('/api/admin/verify-user', async (req: Request, res: Response) => {
+  try {
+    const { username, isVerified } = req.body;
+    
+    const user = await User.findOne({ username: username.toLowerCase() });
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    user.isVerified = isVerified !== undefined ? isVerified : true;
+    await user.save();
+    
+    res.json({ message: 'User verification status updated', user: { username: user.username, isVerified: user.isVerified } });
+  } catch (error) {
+    console.error('Verify user error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -283,6 +362,11 @@ app.get('/api/users/:userId', async (req: Request, res: Response) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
+    // Migration: Set displayName to username if not exists (for old users)
+    if (!user.displayName) {
+      user.displayName = user.username;
+    }
+
     res.json(user);
   } catch (error) {
     console.error('Get user error:', error);
@@ -294,10 +378,18 @@ app.get('/api/users/:userId', async (req: Request, res: Response) => {
 app.put('/api/users/:userId', upload.single('profilePicture'), async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
-    const { username, email, bio, status } = req.body;
+    const { displayName, email, bio, status } = req.body;
 
     const updateData: any = {};
-    if (username) updateData.username = username;
+    // Username cannot be changed (immutable)
+    if (displayName !== undefined) {
+      if (displayName.trim().length < 1 || displayName.trim().length > 50) {
+        return res.status(400).json({ 
+          message: 'Display name must be between 1 and 50 characters' 
+        });
+      }
+      updateData.displayName = displayName.trim();
+    }
     if (email) updateData.email = email;
     if (bio !== undefined) updateData.bio = bio;
     if (status !== undefined) updateData.status = status;

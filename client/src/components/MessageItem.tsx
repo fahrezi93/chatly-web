@@ -190,7 +190,9 @@ const MessageItem = forwardRef<HTMLDivElement, MessageItemProps>(({
           {message.messageType === 'image' && message.fileUrl && (
             <div className="relative">
               <img 
-                src={message.fileUrl.startsWith('http') ? message.fileUrl : `${API_URL}${message.fileUrl}`}
+                src={message.fileUrl.startsWith('http://') || message.fileUrl.startsWith('https://') 
+                  ? message.fileUrl 
+                  : `${API_URL}${message.fileUrl}`}
                 alt={message.fileName || 'Image'} 
                 className="w-full max-w-[280px] md:max-w-[320px] h-auto max-h-[400px] object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
                 style={{ aspectRatio: 'auto' }}
@@ -211,7 +213,9 @@ const MessageItem = forwardRef<HTMLDivElement, MessageItemProps>(({
               {/* Image Preview Modal */}
               {showImagePreview && (
                 <ImagePreviewModal
-                  imageUrl={message.fileUrl.startsWith('http') ? message.fileUrl : `${API_URL}${message.fileUrl}`}
+                  imageUrl={message.fileUrl.startsWith('http://') || message.fileUrl.startsWith('https://') 
+                    ? message.fileUrl 
+                    : `${API_URL}${message.fileUrl}`}
                   fileName={message.fileName}
                   onClose={() => setShowImagePreview(false)}
                 />
@@ -225,7 +229,9 @@ const MessageItem = forwardRef<HTMLDivElement, MessageItemProps>(({
               <button
                 onClick={async () => {
                   setIsLoadingFile(true);
-                  const url = message.fileUrl?.startsWith('http') ? message.fileUrl : `${API_URL}${message.fileUrl}`;
+                  const url = message.fileUrl?.startsWith('http://') || message.fileUrl?.startsWith('https://') 
+                    ? message.fileUrl 
+                    : `${API_URL}${message.fileUrl}`;
                   
                   // Simulate loading for better UX (give time for tab to open)
                   setTimeout(() => {

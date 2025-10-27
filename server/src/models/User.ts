@@ -2,6 +2,7 @@ import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IUser extends Document {
   username: string;
+  displayName: string;
   email: string;
   password: string;
   isOnline: boolean;
@@ -9,6 +10,7 @@ export interface IUser extends Document {
   profilePicture?: string;
   bio?: string;
   status?: string;
+  isVerified?: boolean;
 }
 
 const UserSchema: Schema = new Schema({
@@ -16,7 +18,19 @@ const UserSchema: Schema = new Schema({
     type: String,
     required: true,
     unique: true,
-    trim: true
+    trim: true,
+    lowercase: true,
+    minlength: 3,
+    maxlength: 20,
+    match: /^[a-z0-9_ ]+$/, // Allow letters, numbers, underscore, and spaces
+    immutable: true // Username cannot be changed after creation
+  },
+  displayName: {
+    type: String,
+    required: true,
+    trim: true,
+    minlength: 1,
+    maxlength: 50
   },
   email: {
     type: String,
@@ -48,8 +62,12 @@ const UserSchema: Schema = new Schema({
   },
   status: {
     type: String,
-    default: 'Hey there! I am using Chat App',
+    default: 'Halo! Saya menggunakan aplikasi Chatly ini.',
     maxlength: 100
+  },
+  isVerified: {
+    type: Boolean,
+    default: false
   }
 }, {
   timestamps: true

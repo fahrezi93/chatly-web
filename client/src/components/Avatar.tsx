@@ -1,12 +1,18 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 interface AvatarProps {
   username: string;
   isOnline?: boolean;
   size?: 'sm' | 'md' | 'lg' | 'xl';
+  profilePicture?: string;
+  isVerified?: boolean;
 }
 
-const Avatar: React.FC<AvatarProps> = ({ username, isOnline = false, size = 'md' }) => {
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+const Avatar: React.FC<AvatarProps> = ({ username, isOnline = false, size = 'md', profilePicture }) => {
+  const [imageError, setImageError] = useState(false);
+  
   const sizeClasses = {
     sm: 'w-8 h-8 text-xs',
     md: 'w-10 h-10 text-sm',
@@ -30,11 +36,34 @@ const Avatar: React.FC<AvatarProps> = ({ username, isOnline = false, size = 'md'
   const colorIndex = username.charCodeAt(0) % colors.length;
   const bgColor = colors[colorIndex];
 
+  // Construct proper image URL
+  const getImageUrl = () => {
+    if (!profilePicture) return null;
+    if (profilePicture.startsWith('http://') || profilePicture.startsWith('https://')) {
+      return profilePicture;
+    }
+    return `${API_URL}${profilePicture}`;
+  };
+
+  const imageUrl = getImageUrl();
+  const showImage = imageUrl && !imageError;
+
   return (
     <div className="relative inline-block">
-      <div className={`${sizeClasses[size]} ${bgColor} rounded-full flex items-center justify-center font-semibold text-white shadow-soft`}>
-        {initial}
-      </div>
+      {showImage ? (
+        <img
+          src={imageUrl}
+          alt={username}
+          className={`${sizeClasses[size]} rounded-full object-cover shadow-soft`}
+          onError={() => {
+            setImageError(true);
+          }}
+        />
+      ) : (
+        <div className={`${sizeClasses[size]} ${bgColor} rounded-full flex items-center justify-center font-semibold text-white shadow-soft`}>
+          {initial}
+        </div>
+      )}
       {isOnline !== undefined && (
         <div className={`absolute bottom-0 right-0 w-3 h-3 ${isOnline ? 'bg-accent-500' : 'bg-neutral-400'} border-2 border-white rounded-full`}></div>
       )}

@@ -18,11 +18,15 @@ interface CallHistoryItem {
     _id: string;
     username: string;
     email: string;
+    profilePicture?: string;
+    isVerified?: boolean;
   };
   receiver: {
     _id: string;
     username: string;
     email: string;
+    profilePicture?: string;
+    isVerified?: boolean;
   };
   isIncoming: boolean;
 }
@@ -156,7 +160,7 @@ const CallHistory: React.FC<CallHistoryProps> = ({ currentUserId, onClose }) => 
                       isMissed ? 'bg-red-50' : ''
                     }`}
                   >
-                    <Avatar username={otherUser.username} size="md" />
+                    <Avatar username={otherUser.username} size="md" profilePicture={otherUser.profilePicture} isVerified={otherUser.isVerified} />
                     
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">

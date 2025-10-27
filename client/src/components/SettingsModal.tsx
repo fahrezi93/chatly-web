@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
+import axios from 'axios';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -10,8 +11,101 @@ interface SettingsModalProps {
   };
 }
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, currentUser }) => {
   const [activeTab, setActiveTab] = useState<'account' | 'privacy' | 'notifications'>('account');
+  
+  // Password change states
+  const [oldPassword, setOldPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState('');
+  
+  // Privacy settings
+  const [showOnlineStatus, setShowOnlineStatus] = useState(() => 
+    localStorage.getItem('settings_showOnlineStatus') !== 'false'
+  );
+  const [showLastSeen, setShowLastSeen] = useState(() => 
+    localStorage.getItem('settings_showLastSeen') !== 'false'
+  );
+  const [showTypingStatus, setShowTypingStatus] = useState(() => 
+    localStorage.getItem('settings_showTypingStatus') !== 'false'
+  );
+  const [showReadReceipts, setShowReadReceipts] = useState(() => 
+    localStorage.getItem('settings_showReadReceipts') !== 'false'
+  );
+  
+  // Notification settings
+  const [desktopNotifications, setDesktopNotifications] = useState(() => 
+    localStorage.getItem('settings_desktopNotifications') !== 'false'
+  );
+  const [notificationSound, setNotificationSound] = useState(() => 
+    localStorage.getItem('settings_notificationSound') !== 'false'
+  );
+  const [messagePreview, setMessagePreview] = useState(() => 
+    localStorage.getItem('settings_messagePreview') !== 'false'
+  );
+  const [groupNotifications, setGroupNotifications] = useState(() => 
+    localStorage.getItem('settings_groupNotifications') !== 'false'
+  );
+
+  // Save settings to localStorage whenever they change
+  useEffect(() => {
+    localStorage.setItem('settings_showOnlineStatus', String(showOnlineStatus));
+    localStorage.setItem('settings_showLastSeen', String(showLastSeen));
+    localStorage.setItem('settings_showTypingStatus', String(showTypingStatus));
+    localStorage.setItem('settings_showReadReceipts', String(showReadReceipts));
+    localStorage.setItem('settings_desktopNotifications', String(desktopNotifications));
+    localStorage.setItem('settings_notificationSound', String(notificationSound));
+    localStorage.setItem('settings_messagePreview', String(messagePreview));
+    localStorage.setItem('settings_groupNotifications', String(groupNotifications));
+  }, [showOnlineStatus, showLastSeen, showTypingStatus, showReadReceipts, 
+      desktopNotifications, notificationSound, messagePreview, groupNotifications]);
+
+  const handleChangePassword = async () => {
+    setPasswordError('');
+    setPasswordSuccess('');
+    
+    if (!oldPassword || !newPassword || !confirmPassword) {
+      setPasswordError('Semua field harus diisi');
+      return;
+    }
+    
+    if (newPassword !== confirmPassword) {
+      setPasswordError('Kata sandi baru tidak cocok');
+      return;
+    }
+    
+    if (newPassword.length < 6) {
+      setPasswordError('Kata sandi minimal 6 karakter');
+      return;
+    }
+    
+    try {
+      // Call API to change password
+      await axios.post(`${API_URL}/api/auth/change-password`, {
+        email: currentUser.email,
+        oldPassword,
+        newPassword
+      });
+      
+      setPasswordSuccess('Kata sandi berhasil diubah');
+      setOldPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      
+      setTimeout(() => setPasswordSuccess(''), 3000);
+    } catch (error: any) {
+      setPasswordError(error.response?.data?.message || 'Gagal mengubah kata sandi');
+    }
+  };
+
+  const handleSaveSettings = () => {
+    // Settings are already saved to localStorage via useEffect
+    onClose();
+  };
 
   if (!isOpen) return null;
 
@@ -104,6 +198,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, currentU
                     </label>
                     <input
                       type="password"
+                      value={oldPassword}
+                      onChange={(e) => setOldPassword(e.target.value)}
                       placeholder="Masukkan kata sandi lama"
                       className="w-full px-4 py-2 border border-[#64748B]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:border-transparent"
                     />
@@ -114,6 +210,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, currentU
                     </label>
                     <input
                       type="password"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
                       placeholder="Masukkan kata sandi baru"
                       className="w-full px-4 py-2 border border-[#64748B]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:border-transparent"
                     />
@@ -124,11 +222,27 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, currentU
                     </label>
                     <input
                       type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder="Konfirmasi kata sandi baru"
                       className="w-full px-4 py-2 border border-[#64748B]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:border-transparent"
                     />
                   </div>
-                  <button className="bg-[#2563EB] hover:bg-[#3B82F6] text-white px-6 py-2 rounded-lg font-semibold transition-colors">
+                  {passwordError && (
+                    <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-2 rounded-lg text-sm">
+                      {passwordError}
+                    </div>
+                  )}
+                  {passwordSuccess && (
+                    <div className="bg-green-50 border border-green-200 text-green-600 px-4 py-2 rounded-lg text-sm">
+                      {passwordSuccess}
+                    </div>
+                  )}
+                  <button 
+                    onClick={handleChangePassword}
+                    type="button"
+                    className="bg-[#2563EB] hover:bg-[#3B82F6] text-white px-6 py-2 rounded-lg font-semibold transition-colors"
+                  >
                     Ubah Kata Sandi
                   </button>
                 </div>
@@ -147,7 +261,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, currentU
                       <p className="text-sm text-[#64748B]">Tampilkan status online kepada kontak</p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
-                      <input type="checkbox" className="sr-only peer" defaultChecked />
+                      <input 
+                        type="checkbox" 
+                        className="sr-only peer" 
+                        checked={showOnlineStatus}
+                        onChange={(e) => setShowOnlineStatus(e.target.checked)}
+                      />
                       <div className="w-11 h-6 bg-[#64748B]/20 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#2563EB]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2563EB]"></div>
                     </label>
                   </div>
@@ -158,7 +277,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, currentU
                       <p className="text-sm text-[#64748B]">Tampilkan waktu terakhir online</p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
-                      <input type="checkbox" className="sr-only peer" defaultChecked />
+                      <input 
+                        type="checkbox" 
+                        className="sr-only peer" 
+                        checked={showLastSeen}
+                        onChange={(e) => setShowLastSeen(e.target.checked)}
+                      />
                       <div className="w-11 h-6 bg-[#64748B]/20 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#2563EB]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2563EB]"></div>
                     </label>
                   </div>
@@ -169,7 +293,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, currentU
                       <p className="text-sm text-[#64748B]">Tampilkan indikator saat mengetik</p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
-                      <input type="checkbox" className="sr-only peer" defaultChecked />
+                      <input 
+                        type="checkbox" 
+                        className="sr-only peer" 
+                        checked={showTypingStatus}
+                        onChange={(e) => setShowTypingStatus(e.target.checked)}
+                      />
                       <div className="w-11 h-6 bg-[#64748B]/20 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#2563EB]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2563EB]"></div>
                     </label>
                   </div>
@@ -180,7 +309,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, currentU
                       <p className="text-sm text-[#64748B]">Kirim tanda baca pesan (✓✓)</p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
-                      <input type="checkbox" className="sr-only peer" defaultChecked />
+                      <input 
+                        type="checkbox" 
+                        className="sr-only peer" 
+                        checked={showReadReceipts}
+                        onChange={(e) => setShowReadReceipts(e.target.checked)}
+                      />
                       <div className="w-11 h-6 bg-[#64748B]/20 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#2563EB]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2563EB]"></div>
                     </label>
                   </div>
@@ -200,7 +334,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, currentU
                       <p className="text-sm text-[#64748B]">Tampilkan notifikasi di desktop</p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
-                      <input type="checkbox" className="sr-only peer" defaultChecked />
+                      <input 
+                        type="checkbox" 
+                        className="sr-only peer" 
+                        checked={desktopNotifications}
+                        onChange={(e) => setDesktopNotifications(e.target.checked)}
+                      />
                       <div className="w-11 h-6 bg-[#64748B]/20 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#2563EB]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2563EB]"></div>
                     </label>
                   </div>
@@ -211,7 +350,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, currentU
                       <p className="text-sm text-[#64748B]">Putar suara saat menerima pesan</p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
-                      <input type="checkbox" className="sr-only peer" defaultChecked />
+                      <input 
+                        type="checkbox" 
+                        className="sr-only peer" 
+                        checked={notificationSound}
+                        onChange={(e) => setNotificationSound(e.target.checked)}
+                      />
                       <div className="w-11 h-6 bg-[#64748B]/20 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#2563EB]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2563EB]"></div>
                     </label>
                   </div>
@@ -222,7 +366,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, currentU
                       <p className="text-sm text-[#64748B]">Tampilkan preview pesan di notifikasi</p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
-                      <input type="checkbox" className="sr-only peer" defaultChecked />
+                      <input 
+                        type="checkbox" 
+                        className="sr-only peer" 
+                        checked={messagePreview}
+                        onChange={(e) => setMessagePreview(e.target.checked)}
+                      />
                       <div className="w-11 h-6 bg-[#64748B]/20 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#2563EB]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2563EB]"></div>
                     </label>
                   </div>
@@ -233,7 +382,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, currentU
                       <p className="text-sm text-[#64748B]">Terima notifikasi dari pesan grup</p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
-                      <input type="checkbox" className="sr-only peer" defaultChecked />
+                      <input 
+                        type="checkbox" 
+                        className="sr-only peer" 
+                        checked={groupNotifications}
+                        onChange={(e) => setGroupNotifications(e.target.checked)}
+                      />
                       <div className="w-11 h-6 bg-[#64748B]/20 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#2563EB]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2563EB]"></div>
                     </label>
                   </div>
@@ -251,7 +405,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, currentU
           >
             Batal
           </button>
-          <button className="px-6 py-2 bg-[#2563EB] hover:bg-[#3B82F6] text-white rounded-lg font-semibold transition-colors">
+          <button 
+            onClick={handleSaveSettings}
+            className="px-6 py-2 bg-[#2563EB] hover:bg-[#3B82F6] text-white rounded-lg font-semibold transition-colors"
+          >
             Simpan Perubahan
           </button>
         </div>

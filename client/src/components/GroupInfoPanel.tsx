@@ -155,7 +155,7 @@ const GroupInfoPanel: React.FC<GroupInfoPanelProps> = ({
                       key={memberId}
                       className="flex items-center gap-3 p-2 hover:bg-neutral-50 rounded-lg transition-all duration-200 hover:scale-[1.01] animate-fade-in"
                     >
-                      <Avatar username={member.username} isOnline={member.isOnline} />
+                      <Avatar username={member.username} isOnline={member.isOnline} profilePicture={member.profilePicture} isVerified={member.isVerified} />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <p className="text-sm font-medium text-neutral-900 truncate">

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 
 interface PreferencesModalProps {
@@ -7,9 +7,39 @@ interface PreferencesModalProps {
 }
 
 const PreferencesModal: React.FC<PreferencesModalProps> = ({ isOpen, onClose }) => {
-  const [theme, setTheme] = useState<'light' | 'dark' | 'auto'>('light');
-  const [language, setLanguage] = useState('id');
-  const [fontSize, setFontSize] = useState('medium');
+  const [theme, setTheme] = useState<'light' | 'dark' | 'auto'>(() => 
+    (localStorage.getItem('preferences_theme') as 'light' | 'dark' | 'auto') || 'light'
+  );
+  const [fontSize, setFontSize] = useState(() => 
+    localStorage.getItem('preferences_fontSize') || 'medium'
+  );
+  const [enterToSend, setEnterToSend] = useState(() => 
+    localStorage.getItem('preferences_enterToSend') !== 'false'
+  );
+  const [autoDownload, setAutoDownload] = useState(() => 
+    localStorage.getItem('preferences_autoDownload') === 'true'
+  );
+  const [emojiPicker, setEmojiPicker] = useState(() => 
+    localStorage.getItem('preferences_emojiPicker') !== 'false'
+  );
+  const [compactMode, setCompactMode] = useState(() => 
+    localStorage.getItem('preferences_compactMode') === 'true'
+  );
+
+  // Save preferences to localStorage
+  useEffect(() => {
+    localStorage.setItem('preferences_theme', theme);
+    localStorage.setItem('preferences_fontSize', fontSize);
+    localStorage.setItem('preferences_enterToSend', String(enterToSend));
+    localStorage.setItem('preferences_autoDownload', String(autoDownload));
+    localStorage.setItem('preferences_emojiPicker', String(emojiPicker));
+    localStorage.setItem('preferences_compactMode', String(compactMode));
+  }, [theme, fontSize, enterToSend, autoDownload, emojiPicker, compactMode]);
+
+  const handleSavePreferences = () => {
+    // Preferences are already saved via useEffect
+    onClose();
+  };
 
   if (!isOpen) return null;
 
@@ -121,19 +151,10 @@ const PreferencesModal: React.FC<PreferencesModalProps> = ({ isOpen, onClose }) 
               <label className="block text-sm font-medium text-[#64748B] mb-2">
                 Bahasa Aplikasi
               </label>
-              <select
-                value={language}
-                onChange={(e) => setLanguage(e.target.value)}
-                className="w-full px-4 py-2 border border-[#64748B]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#2563EB] focus:border-transparent"
-              >
-                <option value="id">Bahasa Indonesia</option>
-                <option value="en">English</option>
-                <option value="es">Español</option>
-                <option value="fr">Français</option>
-                <option value="de">Deutsch</option>
-                <option value="ja">日本語</option>
-                <option value="zh">中文</option>
-              </select>
+              <div className="w-full px-4 py-2 border border-[#64748B]/20 rounded-lg bg-neutral-50 text-neutral-700">
+                Bahasa Indonesia
+              </div>
+              <p className="text-xs text-[#64748B] mt-1">Hanya tersedia dalam Bahasa Indonesia</p>
             </div>
           </div>
 
@@ -147,7 +168,12 @@ const PreferencesModal: React.FC<PreferencesModalProps> = ({ isOpen, onClose }) 
                   <p className="text-sm text-[#64748B]">Tekan Enter untuk mengirim pesan</p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
-                  <input type="checkbox" className="sr-only peer" defaultChecked />
+                  <input 
+                    type="checkbox" 
+                    className="sr-only peer" 
+                    checked={enterToSend}
+                    onChange={(e) => setEnterToSend(e.target.checked)}
+                  />
                   <div className="w-11 h-6 bg-[#64748B]/20 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#2563EB]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2563EB]"></div>
                 </label>
               </div>
@@ -158,7 +184,12 @@ const PreferencesModal: React.FC<PreferencesModalProps> = ({ isOpen, onClose }) 
                   <p className="text-sm text-[#64748B]">Download gambar dan video otomatis</p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
-                  <input type="checkbox" className="sr-only peer" />
+                  <input 
+                    type="checkbox" 
+                    className="sr-only peer" 
+                    checked={autoDownload}
+                    onChange={(e) => setAutoDownload(e.target.checked)}
+                  />
                   <div className="w-11 h-6 bg-[#64748B]/20 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#2563EB]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2563EB]"></div>
                 </label>
               </div>
@@ -169,7 +200,12 @@ const PreferencesModal: React.FC<PreferencesModalProps> = ({ isOpen, onClose }) 
                   <p className="text-sm text-[#64748B]">Tampilkan emoji picker di input</p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
-                  <input type="checkbox" className="sr-only peer" defaultChecked />
+                  <input 
+                    type="checkbox" 
+                    className="sr-only peer" 
+                    checked={emojiPicker}
+                    onChange={(e) => setEmojiPicker(e.target.checked)}
+                  />
                   <div className="w-11 h-6 bg-[#64748B]/20 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#2563EB]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2563EB]"></div>
                 </label>
               </div>
@@ -180,7 +216,12 @@ const PreferencesModal: React.FC<PreferencesModalProps> = ({ isOpen, onClose }) 
                   <p className="text-sm text-[#64748B]">Tampilan chat lebih padat</p>
                 </div>
                 <label className="relative inline-flex items-center cursor-pointer">
-                  <input type="checkbox" className="sr-only peer" />
+                  <input 
+                    type="checkbox" 
+                    className="sr-only peer" 
+                    checked={compactMode}
+                    onChange={(e) => setCompactMode(e.target.checked)}
+                  />
                   <div className="w-11 h-6 bg-[#64748B]/20 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#2563EB]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2563EB]"></div>
                 </label>
               </div>
@@ -227,7 +268,10 @@ const PreferencesModal: React.FC<PreferencesModalProps> = ({ isOpen, onClose }) 
           >
             Batal
           </button>
-          <button className="px-6 py-2 bg-[#2563EB] hover:bg-[#3B82F6] text-white rounded-lg font-semibold transition-colors">
+          <button 
+            onClick={handleSavePreferences}
+            className="px-6 py-2 bg-[#2563EB] hover:bg-[#3B82F6] text-white rounded-lg font-semibold transition-colors"
+          >
             Simpan Perubahan
           </button>
         </div>

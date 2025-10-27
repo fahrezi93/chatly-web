@@ -1,11 +1,7 @@
 import React from 'react';
-interface User {
-  _id: string;
-  username: string;
-  isOnline?: boolean;
-  description?: string;
-}
 import Avatar from './Avatar';
+import VerifiedBadge from './VerifiedBadge';
+import { User } from '../types';
 
 interface UserInfoPanelProps {
   user: User | null;
@@ -27,14 +23,18 @@ const UserInfoPanel: React.FC<UserInfoPanelProps> = ({ user, onClose }) => {
       </div>
       <div className="p-6 text-center">
         <div className="mb-4">
-          <Avatar username={user.username} isOnline={user.isOnline} size="xl" />
+          <Avatar username={user.username} isOnline={user.isOnline} size="xl" profilePicture={user.profilePicture} isVerified={user.isVerified} />
         </div>
-        <h3 className="font-bold text-xl">{user.username}</h3>
-        <p className="text-gray-500 text-sm">{user.isOnline ? 'Online' : 'Offline'}</p>
+        <div className="flex items-center justify-center gap-1">
+          <h3 className="font-bold text-xl">{user.displayName || user.username}</h3>
+          {user.isVerified && <VerifiedBadge size="md" />}
+        </div>
+        <p className="text-gray-500 text-sm">@{user.username}</p>
+        <p className="text-gray-500 text-xs mt-1">{user.isOnline ? 'Online' : 'Offline'}</p>
       </div>
       <div className="p-6 border-t border-gray-200">
         <h4 className="font-bold text-md mb-2">Deskripsi</h4>
-        <p className="text-gray-600 text-sm">{user.description || 'Tidak ada deskripsi.'}</p>
+        <p className="text-gray-600 text-sm">{user.bio || 'Tidak ada deskripsi.'}</p>
       </div>
     </div>
   );
