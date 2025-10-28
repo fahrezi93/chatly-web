@@ -9,6 +9,12 @@ const AdminPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'users'>('dashboard');
   const { userId } = getAuthData();
 
+  // Redirect if no userId
+  if (!userId) {
+    navigate('/login');
+    return null;
+  }
+
   const handleLogout = () => {
     navigate('/chat');
   };
