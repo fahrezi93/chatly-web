@@ -140,11 +140,12 @@ const ChatPage: React.FC = () => {
     };
   }, [socket, isConnected, navigate]);
 
-  // Reload contacts when window gains focus (e.g., returning from admin panel)
+  // Reload contacts and missed calls when window gains focus (e.g., returning from admin panel)
   useEffect(() => {
     const handleFocus = () => {
       if (currentUserId) {
         loadContacts(currentUserId);
+        loadMissedCallsCount(currentUserId);
       }
     };
 
@@ -548,7 +549,16 @@ const ChatPage: React.FC = () => {
       {showCallHistory && (
         <CallHistory
           currentUserId={currentUserId}
-          onClose={() => setShowCallHistory(false)}
+          onClose={() => {
+            setShowCallHistory(false);
+            // Update lastViewed timestamp when closing
+            const lastViewedKey = `callHistory_lastViewed_${currentUserId}`;
+            localStorage.setItem(lastViewedKey, new Date().toISOString());
+            // Reset missed calls count
+            setMissedCallsCount(0);
+            // Reload to ensure count is correct
+            loadMissedCallsCount(currentUserId);
+          }}
         />
       )}
 

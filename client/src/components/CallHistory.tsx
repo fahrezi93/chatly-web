@@ -41,7 +41,17 @@ const CallHistory: React.FC<CallHistoryProps> = ({ currentUserId, onClose }) => 
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Set timestamp when opening
+    const lastViewedKey = `callHistory_lastViewed_${currentUserId}`;
+    const openTime = new Date().toISOString();
+    localStorage.setItem(lastViewedKey, openTime);
+    
     loadCallHistory();
+
+    // Update timestamp again when component unmounts (closing)
+    return () => {
+      localStorage.setItem(lastViewedKey, new Date().toISOString());
+    };
   }, [currentUserId]);
 
   const loadCallHistory = async () => {
