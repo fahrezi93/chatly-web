@@ -359,6 +359,19 @@ const ChatPage: React.FC = () => {
         
         {/* Right side actions */}
         <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">
+          {/* Mobile: Profile dropdown (only visible on beranda) */}
+          {showSidebar && (
+            <div className="md:hidden">
+              <ProfileDropdown
+                user={currentUser}
+                onOpenProfile={() => setShowProfileModal(true)}
+                onOpenSettings={() => setShowSettingsModal(true)}
+                onOpenPreferences={() => setShowPreferencesModal(true)}
+                onLogout={handleLogout}
+              />
+            </div>
+          )}
+          
           {/* Desktop buttons - always visible on desktop */}
           <div className="hidden md:flex items-center gap-1 md:gap-2">
           <button
