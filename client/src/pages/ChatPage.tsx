@@ -340,9 +340,13 @@ const ChatPage: React.FC = () => {
             alt="Chatly" 
             className="h-6 w-auto flex-shrink-0"
           />
-          <h1 className="text-md font-bold text-white truncate">Chatly</h1>
+          {/* Show text only on desktop or when sidebar is visible (beranda) */}
+          <h1 className={`text-md font-bold text-white truncate ${
+            showSidebar ? 'block' : 'hidden md:block'
+          }`}>Chatly</h1>
         </div>
-        <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">
+        {/* Desktop buttons - always visible on desktop */}
+        <div className="hidden md:flex items-center gap-1 md:gap-2 flex-shrink-0">
           <button
             onClick={() => {
               setShowCallHistory(true);
@@ -415,6 +419,7 @@ const ChatPage: React.FC = () => {
           z-30
           md:z-auto
           top-[57px] md:top-0
+          bottom-[73px] md:bottom-0
           overflow-hidden
         `}>
           {/* Tab Switcher */}
@@ -613,6 +618,56 @@ const ChatPage: React.FC = () => {
         isOpen={showPreferencesModal}
         onClose={() => setShowPreferencesModal(false)}
       />
+
+      {/* Bottom Navigation Bar - Mobile Only, visible only when sidebar is shown (beranda) */}
+      {showSidebar && (
+        <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-lg z-40">
+          <div className="flex items-center justify-around px-4 py-3">
+            {/* Riwayat Button */}
+            <button
+              onClick={() => {
+                setShowCallHistory(true);
+                setMissedCallsCount(0);
+                const lastViewedKey = `callHistory_lastViewed_${currentUserId}`;
+                localStorage.setItem(lastViewedKey, new Date().toISOString());
+              }}
+              className="flex flex-col items-center gap-1 text-gray-600 hover:text-blue-600 transition-colors relative"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span className="text-xs font-medium">Riwayat</span>
+              {missedCallsCount > 0 && (
+                <span className="absolute -top-1 -right-2 bg-red-500 text-white text-xs font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 shadow-lg">
+                  {missedCallsCount > 99 ? '99+' : missedCallsCount}
+                </span>
+              )}
+            </button>
+
+            {/* Tambah Kontak Button */}
+            <button
+              onClick={() => setShowAddContact(true)}
+              className="flex flex-col items-center gap-1 text-gray-600 hover:text-blue-600 transition-colors"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+              </svg>
+              <span className="text-xs font-medium">Tambah</span>
+            </button>
+
+            {/* Buat Grup Button */}
+            <button
+              onClick={() => setShowCreateGroup(true)}
+              className="flex flex-col items-center gap-1 text-gray-600 hover:text-blue-600 transition-colors"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+              </svg>
+              <span className="text-xs font-medium">Grup Baru</span>
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
