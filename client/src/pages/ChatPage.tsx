@@ -320,33 +320,47 @@ const ChatPage: React.FC = () => {
   return (
     <div className="h-screen flex flex-col bg-[#F8FAFC] overflow-hidden">
       {/* Top Header */}
-      <div className="bg-gradient-to-r from-[#2563EB] to-[#3B82F6] px-4 py-2 flex items-center justify-between shadow-md flex-shrink-0">
+      <div className="bg-gradient-to-r from-[#2563EB] to-[#3B82F6] px-4 py-3 flex items-center justify-between shadow-md flex-shrink-0 relative">
+        {/* Left side */}
         <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1 overflow-hidden">
           {/* Mobile: Back button when chat is open */}
           {!showSidebar && (
             <button
               onClick={handleBackToContacts}
-              className="md:hidden p-2 text-white/80 hover:bg-white/10 rounded-lg transition-colors"
+              className="md:hidden p-2 -ml-2 text-white hover:bg-white/10 rounded-lg transition-colors flex-shrink-0"
               aria-label="Back to contacts"
             >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
               </svg>
             </button>
           )}
           
+          {/* Desktop: Logo and text on left */}
+          <div className="hidden md:flex items-center gap-2">
+            <img 
+              src="/logo-chatly-putih.png" 
+              alt="Chatly" 
+              className="h-6 w-auto flex-shrink-0"
+            />
+            <h1 className="text-md font-bold text-white whitespace-nowrap">Chatly</h1>
+          </div>
+        </div>
+
+        {/* Mobile: Center - Logo and Chatly text (always perfectly centered) */}
+        <div className="md:hidden absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 flex items-center gap-2 pointer-events-none">
           <img 
             src="/logo-chatly-putih.png" 
             alt="Chatly" 
             className="h-6 w-auto flex-shrink-0"
           />
-          {/* Show text only on desktop or when sidebar is visible (beranda) */}
-          <h1 className={`text-md font-bold text-white truncate ${
-            showSidebar ? 'block' : 'hidden md:block'
-          }`}>Chatly</h1>
+          <h1 className="text-md font-bold text-white whitespace-nowrap">Chatly</h1>
         </div>
-        {/* Desktop buttons - always visible on desktop */}
-        <div className="hidden md:flex items-center gap-1 md:gap-2 flex-shrink-0">
+        
+        {/* Right side actions */}
+        <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">
+          {/* Desktop buttons - always visible on desktop */}
+          <div className="hidden md:flex items-center gap-1 md:gap-2">
           <button
             onClick={() => {
               setShowCallHistory(true);
@@ -401,6 +415,7 @@ const ChatPage: React.FC = () => {
             onOpenPreferences={() => setShowPreferencesModal(true)}
             onLogout={handleLogout}
           />
+          </div>
         </div>
       </div>
 
@@ -418,7 +433,7 @@ const ChatPage: React.FC = () => {
           transition-transform duration-300 ease-in-out
           z-30
           md:z-auto
-          top-[57px] md:top-0
+          top-[61px] md:top-0
           bottom-[73px] md:bottom-0
           overflow-hidden
         `}>
