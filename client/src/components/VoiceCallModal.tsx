@@ -212,6 +212,16 @@ const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
     };
 
     const handleCallEnded = () => {
+      // Cleanup resources
+      if (localStreamRef.current) {
+        localStreamRef.current.getTracks().forEach(track => track.stop());
+        localStreamRef.current = null;
+      }
+      if (peerConnectionRef.current) {
+        peerConnectionRef.current.close();
+        peerConnectionRef.current = null;
+      }
+      
       setCallStatus('ended');
       setTimeout(() => {
         onClose();
@@ -219,11 +229,27 @@ const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
     };
 
     const handleCallRejected = () => {
+      // Cleanup resources
+      if (localStreamRef.current) {
+        localStreamRef.current.getTracks().forEach(track => track.stop());
+        localStreamRef.current = null;
+      }
+      if (peerConnectionRef.current) {
+        peerConnectionRef.current.close();
+        peerConnectionRef.current = null;
+      }
+      
+      // Show notification and close modal
       showNotification(
         'Panggilan Ditolak',
         `${recipientName} menolak panggilan Anda.`,
         'warning'
       );
+      
+      // Close modal after short delay
+      setTimeout(() => {
+        onClose();
+      }, 1500);
     };
 
     const handleCallFailed = (data: { message: string }) => {
@@ -375,12 +401,23 @@ const VoiceCallModal: React.FC<VoiceCallModalProps> = ({
   };
 
   const handleRejectCall = () => {
+    // Cleanup resources before closing
+    if (localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach(track => track.stop());
+      localStreamRef.current = null;
+    }
+    if (peerConnectionRef.current) {
+      peerConnectionRef.current.close();
+      peerConnectionRef.current = null;
+    }
+    
     if (socket) {
       socket.emit('reject-call', { 
         callerId: recipientId,
         callId: callIdRef.current
       });
     }
+    
     onClose();
   };
 

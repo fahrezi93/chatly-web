@@ -32,7 +32,16 @@ const UserInfoPanel: React.FC<UserInfoPanelProps> = ({ user, onClose }) => {
         <p className="text-gray-500 text-sm">@{user.username}</p>
         <p className="text-gray-500 text-xs mt-1">{user.isOnline ? 'Online' : 'Offline'}</p>
       </div>
-      <div className="p-6 border-t border-gray-200">
+      
+      {/* Status Section */}
+      {user.status && (
+        <div className="px-6 py-4 border-t border-gray-200">
+          <h4 className="font-bold text-md mb-2">Status</h4>
+          <p className="text-gray-600 text-sm">{user.status}</p>
+        </div>
+      )}
+      
+      <div className="px-6 py-4 border-t border-gray-200">
         <h4 className="font-bold text-md mb-2">Deskripsi</h4>
         <p className="text-gray-600 text-sm">{user.bio || 'Tidak ada deskripsi.'}</p>
       </div>

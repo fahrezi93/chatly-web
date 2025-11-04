@@ -117,11 +117,23 @@ const ChatPage: React.FC = () => {
     };
 
     // Listen for call ended to update missed calls count
-    const handleCallEnded = ({ status, receiverId }: { status: string; receiverId: string }) => {
+    const handleCallEnded = (data?: { status?: string; receiverId?: string }) => {
+      if (!data) return;
+      const { status, receiverId } = data;
       if (status === 'missed' && receiverId === userId) {
         // Increment missed calls count
         setMissedCallsCount(prev => prev + 1);
       }
+    };
+
+    // Listen for call rejected
+    const handleCallRejected = () => {
+      // Close call modal when call is rejected
+      setIsCallModalOpen(false);
+      setCallRecipientId('');
+      setIsCaller(false);
+      setIncomingOffer(null);
+      setCallId(null);
     };
 
     socket.on('disconnect', handleDisconnect);
@@ -129,6 +141,7 @@ const ChatPage: React.FC = () => {
     socket.on('user-status-changed', handleUserStatusChanged);
     socket.on('incoming-call', handleIncomingCall);
     socket.on('call-ended', handleCallEnded);
+    socket.on('call-rejected', handleCallRejected);
 
     // Cleanup listeners on unmount
     return () => {
@@ -137,6 +150,7 @@ const ChatPage: React.FC = () => {
       socket.off('user-status-changed', handleUserStatusChanged);
       socket.off('incoming-call', handleIncomingCall);
       socket.off('call-ended', handleCallEnded);
+      socket.off('call-rejected', handleCallRejected);
     };
   }, [socket, isConnected, navigate]);
 

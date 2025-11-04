@@ -17,6 +17,31 @@ interface MessageItemProps {
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
+// Helper function to detect and linkify URLs
+const linkifyText = (text: string) => {
+  // Regex to match URLs
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const parts = text.split(urlRegex);
+  
+  return parts.map((part, index) => {
+    if (part.match(urlRegex)) {
+      return (
+        <a
+          key={index}
+          href={part}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline hover:opacity-80 transition-opacity"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {part}
+        </a>
+      );
+    }
+    return part;
+  });
+};
+
 const MessageItem = forwardRef<HTMLDivElement, MessageItemProps>(({
   message,
   isOwnMessage,
@@ -205,7 +230,7 @@ const MessageItem = forwardRef<HTMLDivElement, MessageItemProps>(({
               {message.content && message.content !== '📷 Gambar' && (
                 <div className="px-3 md:px-4 py-2">
                   <p className={`text-sm ${isOwnMessage ? 'text-white/95' : 'text-[#1E293B]'}`}>
-                    {message.content}
+                    {linkifyText(message.content)}
                   </p>
                 </div>
               )}
@@ -273,7 +298,9 @@ const MessageItem = forwardRef<HTMLDivElement, MessageItemProps>(({
           {/* Text message */}
           {(!message.messageType || message.messageType === 'text') && (
             <div className="px-3 md:px-4 py-2 md:py-2.5">
-              <p className="break-words whitespace-pre-wrap overflow-wrap-anywhere text-sm leading-relaxed">{message.content}</p>
+              <p className="break-words whitespace-pre-wrap overflow-wrap-anywhere text-sm leading-relaxed">
+                {linkifyText(message.content)}
+              </p>
             </div>
           )}
           
