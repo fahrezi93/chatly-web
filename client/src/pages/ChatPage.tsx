@@ -299,7 +299,9 @@ const ChatPage: React.FC = () => {
   // Back to contacts (show sidebar on mobile)
   const handleBackToContacts = () => {
     setShowSidebar(true);
-    // Don't clear selection, just show sidebar
+    // Clear selection on mobile to close the chat properly
+    setSelectedUserId(null);
+    setSelectedGroupId(null);
   };
 
   const selectedRecipient = contacts.find(c => c._id === selectedUserId) || null;

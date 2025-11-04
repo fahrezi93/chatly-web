@@ -420,26 +420,26 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     }
   }, [recipientId, groupId, viewMode, currentUserId, socket]);
 
-  // Auto-scroll to first unread message or bottom on initial load (without animation)
+  // Instant scroll to bottom or first unread on initial load (no animation)
   useEffect(() => {
     if (messages.length > 0 && !hasScrolledToUnread.current) {
-      // Use setTimeout to ensure DOM is fully rendered
-      setTimeout(() => {
+      // Use requestAnimationFrame to ensure DOM is fully rendered
+      requestAnimationFrame(() => {
         if (firstUnreadMessageRef.current) {
-          // Scroll to first unread message instantly (no smooth animation)
+          // Scroll to first unread message instantly (no animation)
           firstUnreadMessageRef.current.scrollIntoView({ 
-            behavior: 'auto', // Use 'auto' instead of 'smooth' for instant scroll
+            behavior: 'instant' as ScrollBehavior,
             block: 'start' 
           });
         } else if (messagesEndRef.current) {
-          // If no unread messages, scroll to bottom instantly
+          // If no unread messages, scroll to bottom instantly (no animation)
           messagesEndRef.current.scrollIntoView({ 
-            behavior: 'auto', // Use 'auto' instead of 'smooth' for instant scroll
+            behavior: 'instant' as ScrollBehavior,
             block: 'end' 
           });
         }
-        hasScrolledToUnread.current = true; // Mark as scrolled
-      }, 100);
+        hasScrolledToUnread.current = true;
+      });
     }
   }, [messages]);
 
