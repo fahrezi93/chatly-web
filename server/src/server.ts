@@ -514,7 +514,31 @@ app.put('/api/users/:userId', upload.single('profilePicture'), async (req: Reque
       }
       updateData.displayName = displayName.trim();
     }
-    if (email) updateData.email = email;
+    
+    // Validate and update email
+    if (email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({ 
+          message: 'Format email tidak valid' 
+        });
+      }
+      
+      // Check if email already exists (excluding current user)
+      const existingUser = await User.findOne({ 
+        email: email.toLowerCase().trim(),
+        _id: { $ne: userId }
+      });
+      
+      if (existingUser) {
+        return res.status(400).json({ 
+          message: 'Email sudah digunakan oleh pengguna lain' 
+        });
+      }
+      
+      updateData.email = email.toLowerCase().trim();
+    }
+    
     if (bio !== undefined) updateData.bio = bio;
     if (status !== undefined) updateData.status = status;
 
@@ -534,8 +558,19 @@ app.put('/api/users/:userId', upload.single('profilePicture'), async (req: Reque
     }
 
     res.json(user);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Update profile error:', error);
+    
+    // Handle MongoDB duplicate key error
+    if (error.code === 11000) {
+      const field = Object.keys(error.keyPattern)[0];
+      if (field === 'email') {
+        return res.status(400).json({ 
+          message: 'Email sudah digunakan oleh pengguna lain' 
+        });
+      }
+    }
+    
     res.status(500).json({ message: 'Server error' });
   }
 });
