@@ -99,6 +99,9 @@ export default {
           '0%, 100%': { opacity: '1' },
           '50%': { opacity: '0.7' },
         },
+        'shine': {
+          '100%': { left: '125%' },
+        },
       },
       animation: {
         'slide-in-right': 'slide-in-right 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
@@ -111,6 +114,7 @@ export default {
         'pop': 'pop 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55)',
         'wiggle': 'wiggle 0.5s ease-in-out',
         'pulse-soft': 'pulse-soft 2s ease-in-out infinite',
+        'shine': 'shine 1s',
       },
     },
   },

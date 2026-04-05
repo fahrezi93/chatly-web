@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import api from '../utils/api';
 import Avatar from './Avatar';
 import Button from './Button';
 import Input from './Input';
@@ -12,8 +12,6 @@ interface CreateGroupModalProps {
   onClose: () => void;
   onGroupCreated: (group: Group) => void;
 }
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
   isOpen,
@@ -56,7 +54,7 @@ const CreateGroupModal: React.FC<CreateGroupModalProps> = ({
     setLoading(true);
 
     try {
-      const response = await axios.post(`${API_URL}/api/groups`, {
+      const response = await api.post(`/api/groups`, {
         name: groupName,
         description,
         creator: currentUserId,

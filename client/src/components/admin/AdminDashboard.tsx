@@ -1,7 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+import api from '../../utils/api';
 
 interface Stats {
   totalUsers: number;
@@ -24,7 +22,7 @@ const AdminDashboard: React.FC = () => {
 
   const loadStats = async () => {
     try {
-      const response = await axios.get(`${API_URL}/api/admin/stats`);
+      const response = await api.get(`/api/admin/stats`);
       setStats(response.data);
     } catch (error) {
       console.error('Error loading stats:', error);

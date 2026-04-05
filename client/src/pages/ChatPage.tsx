@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '../utils/api';
 import ContactList from '../components/ContactList';
 import ChatWindow from '../components/ChatWindow';
 import VoiceCallModal from '../components/VoiceCallModal';
@@ -14,8 +14,6 @@ import AddContactModal from '../components/AddContactModal';
 import { User, Group, Message } from '../types';
 import { getAuthData, clearAuthData } from '../utils/auth';
 import { useSocket } from '../context/SocketContext';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const ChatPage: React.FC = () => {
   const navigate = useNavigate();
@@ -169,7 +167,7 @@ const ChatPage: React.FC = () => {
 
   const loadCurrentUser = async (userId: string) => {
     try {
-      const response = await axios.get(`${API_URL}/api/users/${userId}`);
+      const response = await api.get(`/api/users/${userId}`);
       setCurrentUser(response.data);
     } catch (error) {
       console.error('Error loading current user:', error);
@@ -179,33 +177,18 @@ const ChatPage: React.FC = () => {
   const loadContacts = async (userId: string) => {
     setIsLoadingContacts(true);
     try {
-      // Add cache buster to ensure fresh data
-      const timestamp = new Date().getTime();
-      const response = await axios.get(`${API_URL}/api/users?_=${timestamp}`);
-      const allUsers = response.data;
-      
-      // Filter out current user and load all other users as contacts
+      // Fetch users and last messages in parallel (only 2 requests total!)
+      const [usersResponse, lastMessagesResponse] = await Promise.all([
+        api.get('/api/users'),
+        api.get(`/api/messages/last-messages/${userId}`)
+      ]);
+
+      const allUsers = usersResponse.data;
       const otherUsers = allUsers.filter((user: User) => user._id !== userId);
       
-      // Load last messages for all contacts
-      const lastMessagesMap: { [key: string]: Message } = {};
-      
-      for (const user of otherUsers) {
-        try {
-          const messagesResponse = await axios.get(`${API_URL}/api/messages/${userId}/${user._id}?_=${timestamp}`);
-          const messages = messagesResponse.data;
-          
-          if (messages.length > 0) {
-            lastMessagesMap[user._id] = messages[messages.length - 1];
-          }
-        } catch (error) {
-          // Skip if error loading messages for this user
-        }
-      }
-      
       setContacts(otherUsers);
-      setLastMessages(lastMessagesMap);
-      console.log(`✅ Loaded ${otherUsers.length} contacts`);
+      setLastMessages(lastMessagesResponse.data);
+      console.log(`✅ Loaded ${otherUsers.length} contacts with last messages (batch)`);
     } catch (error) {
       console.error('Error loading contacts:', error);
     } finally {
@@ -215,7 +198,7 @@ const ChatPage: React.FC = () => {
 
   const loadGroups = async (userId: string) => {
     try {
-      const response = await axios.get(`${API_URL}/api/groups/user/${userId}`);
+      const response = await api.get(`/api/groups/user/${userId}`);
       setGroups(response.data);
     } catch (error) {
       // Error loading groups
@@ -224,7 +207,7 @@ const ChatPage: React.FC = () => {
 
   const loadMissedCallsCount = async (userId: string) => {
     try {
-      const response = await axios.get(`${API_URL}/api/call-history/${userId}`);
+      const response = await api.get(`/api/call-history/${userId}`);
       
       // Get last viewed timestamp from localStorage
       const lastViewedKey = `callHistory_lastViewed_${userId}`;
@@ -302,7 +285,7 @@ const ChatPage: React.FC = () => {
     const isInContacts = contacts.some(c => c._id === otherUserId);
     if (!isInContacts) {
       try {
-        const response = await axios.get(`${API_URL}/api/users/${otherUserId}`);
+        const response = await api.get(`/api/users/${otherUserId}`);
         setContacts(prev => [...prev, response.data]);
       } catch (error) {
         console.error('Error loading user:', error);
@@ -335,119 +318,6 @@ const ChatPage: React.FC = () => {
 
   return (
     <div className="h-screen flex flex-col bg-[#F8FAFC] overflow-hidden">
-      {/* Top Header */}
-      <div className="bg-gradient-to-r from-[#2563EB] to-[#3B82F6] px-4 py-3 flex items-center justify-between shadow-md flex-shrink-0 relative">
-        {/* Left side */}
-        <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1 overflow-hidden">
-          {/* Mobile: Back button when chat is open */}
-          {!showSidebar && (
-            <button
-              onClick={handleBackToContacts}
-              className="md:hidden p-2 -ml-2 text-white hover:bg-white/10 rounded-lg transition-colors flex-shrink-0"
-              aria-label="Back to contacts"
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-          )}
-          
-          {/* Desktop: Logo and text on left */}
-          <div className="hidden md:flex items-center gap-2">
-            <img 
-              src="/logo-chatly-putih.png" 
-              alt="Chatly" 
-              className="h-6 w-auto flex-shrink-0"
-            />
-            <h1 className="text-md font-bold text-white whitespace-nowrap">Chatly</h1>
-          </div>
-        </div>
-
-        {/* Mobile: Center - Logo and Chatly text (always perfectly centered) */}
-        <div className="md:hidden absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 flex items-center gap-2 pointer-events-none">
-          <img 
-            src="/logo-chatly-putih.png" 
-            alt="Chatly" 
-            className="h-6 w-auto flex-shrink-0"
-          />
-          <h1 className="text-md font-bold text-white whitespace-nowrap">Chatly</h1>
-        </div>
-        
-        {/* Right side actions */}
-        <div className="flex items-center gap-1 md:gap-2 flex-shrink-0">
-          {/* Mobile: Profile dropdown (only visible on beranda) */}
-          {showSidebar && (
-            <div className="md:hidden">
-              <ProfileDropdown
-                user={currentUser}
-                onOpenProfile={() => setShowProfileModal(true)}
-                onOpenSettings={() => setShowSettingsModal(true)}
-                onOpenPreferences={() => setShowPreferencesModal(true)}
-                onLogout={handleLogout}
-              />
-            </div>
-          )}
-          
-          {/* Desktop buttons - always visible on desktop */}
-          <div className="hidden md:flex items-center gap-1 md:gap-2">
-          <button
-            onClick={() => {
-              setShowCallHistory(true);
-              setMissedCallsCount(0); // Reset count when opened
-              
-              // Save current timestamp to localStorage
-              const lastViewedKey = `callHistory_lastViewed_${currentUserId}`;
-              localStorage.setItem(lastViewedKey, new Date().toISOString());
-            }}
-            className="px-3 py-1.5 text-white/90 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-200 flex items-center gap-2 text-xs font-medium relative"
-            title="Riwayat Panggilan"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span className="hidden md:inline">Riwayat</span>
-            {missedCallsCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1 shadow-lg">
-                {missedCallsCount > 99 ? '99+' : missedCallsCount}
-              </span>
-            )}
-          </button>
-
-          <button
-            onClick={() => setShowAddContact(true)}
-            className="px-3 py-1.5 text-white/90 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-200 flex items-center gap-2 text-xs font-medium"
-            title="Tambah Kontak"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-            </svg>
-            <span className="hidden md:inline">Tambah</span>
-          </button>
-
-          <button
-            onClick={() => setShowCreateGroup(true)}
-            className="px-3 py-1.5 text-white/90 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-200 flex items-center gap-2 text-xs font-medium"
-            title="Buat Grup"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-            </svg>
-            <span className="hidden md:inline">Grup Baru</span>
-          </button>
-          
-          <div className="h-6 w-px bg-white/20 mx-1"></div>
-          
-          <ProfileDropdown
-            user={currentUser}
-            onOpenProfile={() => setShowProfileModal(true)}
-            onOpenSettings={() => setShowSettingsModal(true)}
-            onOpenPreferences={() => setShowPreferencesModal(true)}
-            onLogout={handleLogout}
-          />
-          </div>
-        </div>
-      </div>
-
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden relative">
         {/* Sidebar - Responsive */}
@@ -462,10 +332,62 @@ const ChatPage: React.FC = () => {
           transition-transform duration-300 ease-in-out
           z-30
           md:z-auto
-          top-[61px] md:top-0
+          top-0 md:top-0
           bottom-[73px] md:bottom-0
           overflow-hidden
         `}>
+          {/* WhatsApp-style Sidebar Header */}
+          <div className="flex items-center justify-between px-3 md:px-4 py-2 bg-white h-[60px] flex-shrink-0">
+            <div className="flex items-center flex-shrink-0">
+              <ProfileDropdown
+                user={currentUser}
+                onOpenProfile={() => setShowProfileModal(true)}
+                onOpenSettings={() => setShowSettingsModal(true)}
+                onOpenPreferences={() => setShowPreferencesModal(true)}
+                onLogout={handleLogout}
+              />
+            </div>
+            <div className="flex items-center gap-0.5 md:gap-1.5 text-slate-500 flex-shrink-0">
+              <button
+                onClick={() => {
+                  setShowCallHistory(true);
+                  setMissedCallsCount(0);
+                  const lastViewedKey = `callHistory_lastViewed_${currentUserId}`;
+                  localStorage.setItem(lastViewedKey, new Date().toISOString());
+                }}
+                className="p-2 hover:bg-slate-100 rounded-full transition-colors relative"
+                title="Riwayat Panggilan"
+              >
+                <svg className="w-[20px] h-[20px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                {missedCallsCount > 0 && (
+                  <span className="absolute top-0.5 right-0.5 bg-red-500 text-white text-[9px] font-bold rounded-full min-w-[14px] h-[14px] flex items-center justify-center shadow-sm border border-white">
+                    {missedCallsCount > 99 ? '99+' : missedCallsCount}
+                  </span>
+                )}
+              </button>
+              <button
+                onClick={() => setShowAddContact(true)}
+                className="p-2 hover:bg-slate-100 rounded-full transition-colors"
+                title="Tambah Kontak"
+              >
+                <svg className="w-[20px] h-[20px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                </svg>
+              </button>
+              <button
+                onClick={() => setShowCreateGroup(true)}
+                className="p-2 hover:bg-slate-100 rounded-full transition-colors"
+                title="Grup Baru"
+              >
+                <svg className="w-[20px] h-[20px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
           {/* Tab Switcher */}
           <div className="flex border-b border-[#64748B]/20">
             <button
@@ -575,6 +497,7 @@ const ChatPage: React.FC = () => {
             onStartCall={handleStartCall}
             viewMode={viewMode}
             onMessageUpdate={handleMessageUpdate}
+            onBack={handleBackToContacts}
           />
         </div>
       </div>

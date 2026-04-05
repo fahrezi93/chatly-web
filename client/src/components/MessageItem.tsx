@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, forwardRef } from 'react';
 import { Message } from '../types';
 import ImagePreviewModal from './ImagePreviewModal';
 import MessageReactions from './MessageReactions';
+import { Check, CheckCheck } from 'lucide-react';
 
 interface MessageItemProps {
   message: Message;
@@ -314,9 +315,9 @@ const MessageItem = forwardRef<HTMLDivElement, MessageItemProps>(({
             </p>
             {isOwnMessage && (
               <span 
-                className={`text-xs ml-1 ${
+                className={`ml-1 flex items-center ${
                   message.isRead || message.status === 'read' 
-                    ? 'text-[#10B981]' 
+                    ? 'text-sky-300' 
                     : 'text-white/70'
                 }`}
                 title={
@@ -328,7 +329,9 @@ const MessageItem = forwardRef<HTMLDivElement, MessageItemProps>(({
                     : 'Terkirim'
                 }
               >
-                {message.isRead || message.status === 'read' ? '✓✓' : '✓'}
+                {message.isRead || message.status === 'read' 
+                  ? <CheckCheck className="w-4 h-4" /> 
+                  : <Check className="w-4 h-4" />}
               </span>
             )}
           </div>

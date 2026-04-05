@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import axios from 'axios';
+import api, { API_URL } from '../utils/api';
 import Avatar from './Avatar';
 import Button from './Button';
 import Input from './Input';
@@ -11,8 +11,6 @@ interface ProfileModalProps {
   onClose: () => void;
   onUpdate: (updatedUser: User) => void;
 }
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, user, onClose, onUpdate }) => {
   const [displayName, setDisplayName] = useState(user.displayName);
@@ -53,8 +51,8 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, user, onClose, onUp
         formData.append('profilePicture', profilePicture);
       }
 
-      const response = await axios.put(
-        `${API_URL}/api/users/${user._id}`,
+      const response = await api.put(
+        `/api/users/${user._id}`,
         formData,
         {
           headers: {

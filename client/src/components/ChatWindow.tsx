@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
+import api from '../utils/api';
 import EmojiPicker, { EmojiClickData } from 'emoji-picker-react';
 import Avatar from './Avatar';
 import MessageItem from './MessageItem';
@@ -30,9 +30,10 @@ interface ChatWindowProps {
   onStartCall: (recipientId: string) => void;
   viewMode?: 'chat' | 'group';
   onMessageUpdate?: (message: Message, otherUserId: string) => void;
+  onBack?: () => void;
 }
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 
 // Helper function to format last seen time
 const formatLastSeen = (lastSeen: Date | undefined): string => {
@@ -66,7 +67,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   group = null,
   onStartCall,
   viewMode = 'chat',
-  onMessageUpdate
+  onMessageUpdate,
+  onBack
 }) => {
   const { socket } = useSocket();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -374,14 +376,14 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       try {
         if (viewMode === 'group' && groupId) {
           // Load group messages
-          const response = await axios.get(`${API_URL}/api/groups/${groupId}/messages`);
+          const response = await api.get(`/api/groups/${groupId}/messages`);
           const loadedMessages = response.data;
           setMessages(loadedMessages);
           
           // No auto-scroll - let user scroll manually
         } else if (recipientId && currentUserId) {
           // Load private messages - ensure currentUserId is not empty
-          const response = await axios.get(`${API_URL}/api/messages/${currentUserId}/${recipientId}`);
+          const response = await api.get(`/api/messages/${currentUserId}/${recipientId}`);
           const loadedMessages = response.data;
           setMessages(loadedMessages);
           
@@ -523,7 +525,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       const formData = new FormData();
       formData.append('file', fileToPreview);
 
-      const response = await axios.post(`${API_URL}/api/upload`, formData, {
+      const response = await api.post(`/api/upload`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
@@ -635,7 +637,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       );
 
       // Then call API
-      await axios.delete(`${API_URL}/api/messages/${messageId}`, {
+      await api.delete(`/api/messages/${messageId}`, {
         data: { userId: currentUserId, deleteForEveryone }
       });
       
@@ -676,7 +678,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       );
 
       // Call API to pin/unpin message
-      await axios.post(`${API_URL}/api/messages/${messageId}/pin`, {
+      await api.post(`/api/messages/${messageId}/pin`, {
         userId: currentUserId
       });
       
@@ -805,7 +807,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       );
 
       // Call API
-      await axios.post(`${API_URL}/api/messages/${messageId}/reaction`, {
+      await api.post(`/api/messages/${messageId}/reaction`, {
         emoji,
         userId: currentUserId
       });
@@ -858,7 +860,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       );
 
       // Call API
-      await axios.delete(`${API_URL}/api/messages/${messageId}/reaction`, {
+      await api.delete(`/api/messages/${messageId}/reaction`, {
         data: { emoji, userId: currentUserId }
       });
 
@@ -905,7 +907,24 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       <div className="flex-1 flex flex-col h-full overflow-hidden">
         {/* Header */}
         <div className="px-3 md:px-6 py-3 md:py-4 bg-white border-b border-[#64748B]/10 flex items-center justify-between flex-shrink-0">
-        <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1 overflow-hidden cursor-pointer" onClick={() => viewMode === 'group' ? setShowGroupInfo(true) : setShowUserInfo(true)}>
+        <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1 overflow-hidden">
+          {/* Mobile Back Button */}
+          {onBack && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onBack();
+              }}
+              className="md:hidden p-2 -ml-2 text-[#64748B] hover:bg-[#F1F5F9] rounded-lg transition-colors flex-shrink-0"
+              aria-label="Kembali"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+          )}
+          
+          <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1 overflow-hidden cursor-pointer" onClick={() => viewMode === 'group' ? setShowGroupInfo(true) : setShowUserInfo(true)}>
           {viewMode === 'group' && group ? (
             <>
               <div className="w-10 h-10 bg-gradient-to-br from-[#10B981] to-[#059669] rounded-full flex items-center justify-center text-white font-semibold shadow-sm flex-shrink-0">
@@ -941,6 +960,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
               </div>
             </>
           ) : null}
+          </div>
         </div>
         
         {/* Action buttons - Search, Voice call, Group info */}

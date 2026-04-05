@@ -2,125 +2,92 @@ import { MessageSquare, Video, Shield, Users } from 'lucide-react';
 
 const Features = () => {
   return (
-    <section id="features" className="py-12 sm:py-16 lg:py-20 bg-gradient-to-br from-[#0F172A] via-[#1E293B] to-[#0F172A] text-white">
+    <section id="features" className="py-24 lg:py-32 bg-slate-50 font-sans text-slate-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Section Header */}
-        <div className="text-center max-w-4xl mx-auto mb-16">
-          <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-4 leading-tight">
-            Bekerja Lebih Cerdas & Tetap Terhubung Di Mana Pun Anda Berada.
-          </h2>
+        
+        <div className="mb-16 lg:mb-24 max-w-2xl">
+          <h2 className="text-sm font-bold text-blue-600 tracking-wider uppercase mb-4">Fitur Utama</h2>
+          <h3 className="text-[2.5rem] sm:text-[3.5rem] lg:text-[4rem] font-bold leading-[1.1] tracking-tight">
+            Alat Komunikasi <br/> Kelas Dunia.
+          </h3>
         </div>
 
-        {/* Features Grid */}
-        <div className="grid md:grid-cols-3 gap-8 sm:gap-10 items-start">
-          {/* Feature 1 - Instant Messaging */}
-          <div className="text-center space-y-4">
-            <div className="flex justify-center">
-              <div className="w-16 h-16 rounded-2xl bg-blue-500/10 border border-blue-400/20 flex items-center justify-center">
-                <MessageSquare className="w-8 h-8 text-blue-400" />
-              </div>
+        {/* Bento Grid Layout */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 auto-rows-[minmax(250px,auto)] lg:auto-rows-[300px]">
+          
+          {/* Card 1: Instant Messaging (col-span-1 to col-span-2) */}
+          <div className="relative md:col-span-2 bg-white rounded-[2.5rem] p-8 lg:p-12 overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-500 flex flex-col justify-between border-2 border-slate-100">
+            {/* Giant Watermark Icon */}
+            <div className="absolute -bottom-16 -right-16 text-slate-50 opacity-80 pointer-events-none transform -rotate-12 transition-transform duration-700 group-hover:scale-110">
+              <MessageSquare size={380} strokeWidth={1} />
             </div>
-            <div>
-              <h3 className="text-xl font-bold text-slate-100 mb-2">Pesan Instan</h3>
-              <p className="text-base text-slate-400 leading-relaxed px-4 sm:px-0">
-                Ngobrol dengan tim Anda secara real-time. Atur percakapan dalam channel yang terorganisir.
+            
+            <div className="relative z-10 w-16 h-16 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mb-8">
+              <MessageSquare size={32} strokeWidth={2} />
+            </div>
+            <div className="relative z-10 max-w-md mt-auto">
+              <h4 className="text-3xl lg:text-4xl font-bold mb-4 tracking-tight">Pesan Instan <br className="hidden md:block"/> Tanpa Batas</h4>
+              <p className="text-slate-500 font-medium leading-relaxed">
+                Kirim pesan teks, suara, dan file dengan kecepatan kilat. Alur komunikasi yang mengalir murni tanpa hambatan pemrosesan.
               </p>
             </div>
           </div>
 
-          {/* Feature 2 - Phone Mockup (Center) */}
-          <div className="flex justify-center my-8 md:my-0">
-            <div className="relative scale-90 sm:scale-100">
-              <div className="relative w-[280px] h-[560px] bg-gradient-to-br from-gray-900 to-black rounded-[2.5rem] p-2.5 shadow-2xl border-[6px] border-gray-800">
-                <div className="relative w-full h-full bg-gradient-to-br from-[#1E293B] to-[#0F172A] rounded-[2rem] overflow-hidden">
-                  <div className="flex items-center justify-between px-6 pt-8 pb-3">
-                    <span className="text-white text-xs font-semibold">9:41 AM</span>
-                  </div>
-                  <div className="px-5 pb-3 flex items-center space-x-2">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-400 to-purple-600"></div>
-                    <div>
-                      <h3 className="text-white text-sm font-bold">Tim Kerja</h3>
-                      <p className="text-[10px] text-white/60">5 anggota</p>
-                    </div>
-                  </div>
-                  <div className="px-5 space-y-3 pb-20">
-                    <div className="flex justify-start">
-                      <div className="bg-white/10 backdrop-blur-sm rounded-2xl rounded-tl-lg px-4 py-2 max-w-[75%]">
-                        <p className="text-white text-sm">Meeting jam 2 siang ya!</p>
-                        <p className="text-xs text-white/50 mt-1">11:20</p>
-                      </div>
-                    </div>
-                    <div className="flex justify-end">
-                      <div className="bg-[#2563EB] rounded-2xl rounded-tr-lg px-4 py-2 max-w-[75%]">
-                        <p className="text-white text-sm">Siap! 👍</p>
-                        <p className="text-xs text-white/70 mt-1">11:21</p>
-                      </div>
-                    </div>
-                    <div className="flex justify-start">
-                      <div className="bg-white/10 backdrop-blur-sm rounded-2xl rounded-tl-lg px-4 py-2 max-w-[75%]">
-                        <p className="text-white text-sm">Jangan lupa bawa laptop.</p>
-                        <p className="text-xs text-white/50 mt-1">11:22</p>
-                      </div>
-                    </div>
-                    <div className="flex justify-end">
-                      <div className="bg-[#2563EB] rounded-2xl rounded-tr-lg px-4 py-2 max-w-[75%]">
-                        <p className="text-white text-sm">Oke, noted! 💻</p>
-                        <p className="text-xs text-white/70 mt-1">11:22</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="absolute bottom-5 left-0 right-0 px-5">
-                    <div className="bg-white/10 backdrop-blur-md rounded-xl px-3 py-2 flex items-center space-x-2">
-                      <div className="flex-1 text-[9px] text-white/50">Ketik pesan...</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+          {/* Card 2: Video Call (row-span-2, Tall) */}
+          <div className="relative md:col-span-1 md:row-span-2 bg-blue-600 rounded-[2.5rem] p-8 lg:p-12 overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-600/30 hover:-translate-y-1 transition-all duration-500 flex flex-col border-2 border-transparent">
+             {/* Giant Watermark Icon */}
+             <div className="absolute -top-10 -right-10 text-white opacity-[0.07] pointer-events-none transform rotate-12 transition-transform duration-700 group-hover:rotate-45">
+              <Video size={400} strokeWidth={1.5} />
+            </div>
+
+            <div className="relative z-10 w-16 h-16 bg-white/20 backdrop-blur-md text-white rounded-2xl flex items-center justify-center mb-auto border border-white/30 hidden md:flex">
+              <Video size={32} strokeWidth={2} />
+            </div>
+
+            <div className="relative z-10 mt-auto pt-16 md:pt-0">
+               <h4 className="text-3xl lg:text-4xl font-bold text-white mb-4 tracking-tight">Video Call<br/> Kristal</h4>
+               <p className="text-blue-100 font-medium leading-relaxed">
+                 Resolusi tinggi, stabilisasi koneksi, tanpa patah-patah. Bertatap muka dari jarak ribuan kilometer layaknya dalam satu meja konferensi.
+               </p>
             </div>
           </div>
 
-          {/* Feature 3 - Video & Audio Calls */}
-          <div className="text-center space-y-4">
-            <div className="flex justify-center">
-              <div className="w-16 h-16 rounded-2xl bg-blue-500/10 border border-blue-400/20 flex items-center justify-center">
-                <Video className="w-8 h-8 text-blue-400" />
-              </div>
-            </div>
-            <div>
-              <h3 className="text-xl font-bold text-slate-100 mb-2">Video & Audio Call</h3>
-              <p className="text-base text-slate-400 leading-relaxed px-4 sm:px-0">
-                Bertemu tatap muka secara instan dengan kualitas jernih dan tanpa lag.
-              </p>
-            </div>
-          </div>
-        </div>
+          {/* Card 3: Keamanan (col-span-1) */}
+          <div className="relative md:col-span-1 bg-slate-950 rounded-[2.5rem] p-8 lg:p-10 overflow-hidden shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 flex flex-col justify-end border-2 border-[#0B0F19]">
+             {/* Giant Watermark Icon */}
+             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white opacity-[0.03] pointer-events-none transition-transform duration-700 group-hover:scale-125">
+               <Shield size={300} strokeWidth={1.5} />
+             </div>
 
-        {/* Bottom Features Row */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-20 max-w-5xl mx-auto">
-          <div className="text-center">
-            <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-400/20 flex items-center justify-center mx-auto mb-3">
-              <MessageSquare className="w-6 h-6 text-blue-400" />
+            <div className="relative z-10">
+               <div className="w-12 h-12 bg-white/10 text-white rounded-xl flex items-center justify-center mb-6 backdrop-blur-sm border border-white/5">
+                 <Shield size={24} strokeWidth={1.5} />
+               </div>
+               <h4 className="text-2xl font-bold text-white mb-2 tracking-tight">Keamanan Penuh</h4>
+               <p className="text-slate-400 text-sm font-medium leading-relaxed">
+                 Enkripsi murni. Tak ada siapa pun yang tahu apa yang Anda diskusikan.
+               </p>
             </div>
-            <p className="text-sm text-slate-300 font-medium">Pesan Instan</p>
           </div>
-          <div className="text-center">
-            <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-400/20 flex items-center justify-center mx-auto mb-3">
-              <Video className="w-6 h-6 text-blue-400" />
+
+          {/* Card 4: Kolaborasi Grup (col-span-1) */}
+          <div className="relative md:col-span-1 bg-slate-200/50 rounded-[2.5rem] p-8 lg:p-10 overflow-hidden hover:bg-slate-200 transition-all duration-500 flex flex-col justify-end border-2 border-transparent">
+            {/* Giant Watermark Icon */}
+            <div className="absolute -bottom-10 -right-4 text-slate-300 opacity-50 pointer-events-none transition-transform duration-700 hover:rotate-12">
+               <Users size={200} strokeWidth={1.5} />
             </div>
-            <p className="text-sm text-slate-300 font-medium">Video & Audio Call</p>
-          </div>
-          <div className="text-center">
-            <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-400/20 flex items-center justify-center mx-auto mb-3">
-              <Users className="w-6 h-6 text-blue-400" />
+
+            <div className="relative z-10">
+               <div className="w-12 h-12 bg-slate-100 text-slate-700 rounded-xl flex items-center justify-center mb-6 shadow-sm border border-slate-200">
+                 <Users size={24} strokeWidth={1.5} />
+               </div>
+               <h4 className="text-2xl font-bold text-slate-900 mb-2 tracking-tight">Kolaborasi Tim</h4>
+               <p className="text-slate-500 text-sm font-medium leading-relaxed max-w-[90%]">
+                 Ruang kerja yang tak membatasi jumlah percabangan ide Anda.
+               </p>
             </div>
-            <p className="text-sm text-slate-300 font-medium">Berbagi & Kolaborasi</p>
           </div>
-          <div className="text-center">
-            <div className="w-12 h-12 rounded-xl bg-blue-500/10 border border-blue-400/20 flex items-center justify-center mx-auto mb-3">
-              <Shield className="w-6 h-6 text-blue-400" />
-            </div>
-            <p className="text-sm text-slate-300 font-medium">Notifikasi Cerdas</p>
-          </div>
+
         </div>
       </div>
     </section>

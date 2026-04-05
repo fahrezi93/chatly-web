@@ -1,10 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import api from '../../utils/api';
 import { User } from '../../types';
 import Avatar from '../Avatar';
 import VerifiedBadge from '../VerifiedBadge';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 interface AdminUsersProps {
   currentUserId: string;
@@ -23,7 +21,7 @@ const AdminUsers: React.FC<AdminUsersProps> = ({ currentUserId }) => {
 
   const loadUsers = async () => {
     try {
-      const response = await axios.get(`${API_URL}/api/admin/users`);
+      const response = await api.get(`/api/admin/users`);
       setUsers(response.data);
     } catch (error) {
       console.error('Error loading users:', error);
@@ -46,7 +44,7 @@ const AdminUsers: React.FC<AdminUsersProps> = ({ currentUserId }) => {
   const handleVerifyUser = async (username: string, isVerified: boolean) => {
     setActionLoading(`verify-${username}`);
     try {
-      await axios.post(`${API_URL}/api/admin/verify-user`, { username, isVerified });
+      await api.post(`/api/admin/verify-user`, { username, isVerified });
       setUsers(users.map(u => u.username === username ? { ...u, isVerified } : u));
       showSuccess(`User ${username} berhasil ${isVerified ? 'diverifikasi' : 'di-unverify'}`);
     } catch (error) {
@@ -60,7 +58,7 @@ const AdminUsers: React.FC<AdminUsersProps> = ({ currentUserId }) => {
   const handleBanUser = async (userId: string, isBanned: boolean) => {
     setActionLoading(`ban-${userId}`);
     try {
-      await axios.post(`${API_URL}/api/admin/ban-user`, { userId, isBanned });
+      await api.post(`/api/admin/ban-user`, { userId, isBanned });
       setUsers(users.map(u => u._id === userId ? { ...u, isBanned } : u));
       showSuccess(`User berhasil ${isBanned ? 'dibanned' : 'di-unban'}`);
     } catch (error) {
@@ -78,7 +76,7 @@ const AdminUsers: React.FC<AdminUsersProps> = ({ currentUserId }) => {
 
     setActionLoading(`delete-${userId}`);
     try {
-      await axios.delete(`${API_URL}/api/admin/users/${userId}`);
+      await api.delete(`/api/admin/users/${userId}`);
       setUsers(users.filter(u => u._id !== userId));
       showSuccess(`User ${username} berhasil dihapus`);
     } catch (error) {

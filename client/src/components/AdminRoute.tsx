@@ -1,9 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { getAuthData } from '../utils/auth';
-import axios from 'axios';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+import api from '../utils/api';
 
 interface AdminRouteProps {
   children: React.ReactNode;
@@ -23,11 +21,7 @@ const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
       }
       
       try {
-        const response = await axios.get(`${API_URL}/api/users/${userId}`, {
-          headers: {
-            Authorization: `Bearer ${token}`
-          }
-        });
+        const response = await api.get(`/api/users/${userId}`);
         
         setIsAdmin(response.data.isAdmin === true);
       } catch (error) {

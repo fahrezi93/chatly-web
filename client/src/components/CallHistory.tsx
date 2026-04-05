@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import api from '../utils/api';
 import Avatar from './Avatar';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 interface CallHistoryItem {
   _id: string;
@@ -57,7 +55,7 @@ const CallHistory: React.FC<CallHistoryProps> = ({ currentUserId, onClose }) => 
   const loadCallHistory = async () => {
     try {
       setLoading(true);
-      const response = await axios.get(`${API_URL}/api/call-history/${currentUserId}`);
+      const response = await api.get(`/api/call-history/${currentUserId}`);
       setCallHistory(response.data);
     } catch (error) {
       // Error loading call history

@@ -1,8 +1,11 @@
-import express, { Request, Response } from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import http from 'http';
 import { Server } from 'socket.io';
 import mongoose from 'mongoose';
 import cors from 'cors';
+import helmet from 'helmet';
+import compression from 'compression';
+import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
@@ -25,16 +28,51 @@ const server = http.createServer(app);
 
 // Get the directory path for uploads (works with both TS and compiled JS)
 const uploadsDir = path.join(process.cwd(), 'server', 'uploads');
+
+// ============ Allowed Origins ============
+const ALLOWED_ORIGINS = [
+  process.env.CLIENT_URL || 'http://localhost:5173',
+  'http://localhost:5173',
+  'http://localhost:3000',
+];
+
 const io = new Server(server, {
   cors: {
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
-    methods: ['GET', 'POST']
+    origin: ALLOWED_ORIGINS,
+    methods: ['GET', 'POST'],
+    credentials: true,
   }
 });
 
-// Middleware
-app.use(cors());
-app.use(express.json());
+// ============ Security & Performance Middleware ============
+
+// Security headers (helmet)
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' }, // Allow Cloudinary images
+  contentSecurityPolicy: false, // Handled by client-side framework
+}));
+
+// Gzip compression
+app.use(compression());
+
+// CORS — Whitelist hanya origin yang diizinkan
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, Postman, server-to-server)
+    if (!origin || ALLOWED_ORIGINS.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error(`CORS policy: origin ${origin} is not allowed`));
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+}));
+
+// Body size limit — prevent JSON bomb attacks
+app.use(express.json({ limit: '1mb' }));
+app.use(express.urlencoded({ extended: true, limit: '1mb' }));
 
 // Configure Cloudinary
 cloudinary.config({
@@ -74,16 +112,98 @@ mongoose.connect(MONGODB_URI)
   })
   .catch((err) => console.error('❌ MongoDB connection error:', err));
 
-// JWT Secret
+// JWT Secret — warn if using default (insecure in production)
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret_key';
+if (!process.env.JWT_SECRET) {
+  console.warn('⚠️  WARNING: JWT_SECRET not set in .env — using default insecure secret! Set JWT_SECRET in production.');
+}
 
-// Map to store userId -> socketId
+// ============ Rate Limiters ============
+
+// Auth endpoints: 10 requests per 15 minutes per IP
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Terlalu banyak percobaan login/register. Coba lagi dalam 15 menit.' },
+  skipSuccessfulRequests: true, // Hanya hitung request yang gagal
+});
+
+// General API: 200 requests per minute per IP
+const generalLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 200,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: 'Terlalu banyak request. Coba lebih lambat.' },
+});
+
+// ============ Auth Middleware ============
+
+// Extend Express Request to include userId from JWT
+interface AuthRequest extends Request {
+  userId?: string;
+}
+
+// JWT Authentication Middleware
+const authMiddleware = (req: AuthRequest, res: Response, next: NextFunction): void => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      res.status(401).json({ message: 'Akses ditolak. Token tidak ditemukan.' });
+      return;
+    }
+
+    const token = authHeader.split(' ')[1];
+    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
+    req.userId = decoded.userId;
+    next();
+  } catch (error) {
+    res.status(401).json({ message: 'Token tidak valid atau sudah kadaluarsa.' });
+  }
+};
+
+// Admin Middleware (must be used AFTER authMiddleware)
+const adminMiddleware = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const user = await User.findById(req.userId);
+    if (!user || !user.isAdmin) {
+      res.status(403).json({ message: 'Akses ditolak. Hanya admin yang diizinkan.' });
+      return;
+    }
+    next();
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Map to store userId → socketId
 const userSockets = new Map<string, string>();
 
-// Map to store active calls: callId -> callHistoryId
+// Map to store active calls: callId → callHistoryId
 const activeCalls = new Map<string, string>();
 
-// ============ REST API Routes ============
+// ============ Socket.IO — JWT Authentication Middleware ============
+
+// Attach verified userId from JWT to each socket connection
+// This prevents clients from spoofing senderId in events
+io.use((socket, next) => {
+  const token = socket.handshake.auth?.token as string | undefined;
+  if (!token) {
+    return next(new Error('Authentication error: no token provided'));
+  }
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
+    socket.data.userId = decoded.userId;
+    next();
+  } catch {
+    next(new Error('Authentication error: invalid token'));
+  }
+});
+
+// Apply general rate limiter to all API routes
+app.use('/api/', generalLimiter);
 
 // Health check endpoint for Railway
 app.get('/', (req: Request, res: Response) => {
@@ -102,8 +222,8 @@ app.get('/health', (req: Request, res: Response) => {
   });
 });
 
-// Register endpoint
-app.post('/api/auth/register', async (req: Request, res: Response) => {
+// Register endpoint — rate limited
+app.post('/api/auth/register', authLimiter, async (req: Request, res: Response) => {
   try {
     const { username, displayName, email, password } = req.body;
 
@@ -158,8 +278,8 @@ app.post('/api/auth/register', async (req: Request, res: Response) => {
   }
 });
 
-// Login endpoint
-app.post('/api/auth/login', async (req: Request, res: Response) => {
+// Login endpoint — rate limited
+app.post('/api/auth/login', authLimiter, async (req: Request, res: Response) => {
   try {
     const { email, password } = req.body;
 
@@ -205,16 +325,20 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
   }
 });
 
-// Get all users (contacts)
-app.get('/api/users', async (req: Request, res: Response) => {
+// Get users (contacts) — paginated, max 100 per call
+app.get('/api/users', authMiddleware, async (req: Request, res: Response) => {
   try {
-    const users = await User.find({}, { password: 0 }).sort({ username: 1 });
+    const limit = Math.min(parseInt(req.query.limit as string) || 100, 100);
+    const skip = parseInt(req.query.skip as string) || 0;
+
+    const users = await User.find({}, { password: 0 })
+      .sort({ username: 1 })
+      .skip(skip)
+      .limit(limit);
     
     // Migration: Set displayName to username if not exists (for old users)
     const updatedUsers = users.map(user => {
-      if (!user.displayName) {
-        user.displayName = user.username;
-      }
+      if (!user.displayName) user.displayName = user.username;
       return user;
     });
     
@@ -225,8 +349,30 @@ app.get('/api/users', async (req: Request, res: Response) => {
   }
 });
 
-// Search user by username
-app.get('/api/users/search/:username', async (req: Request, res: Response) => {
+// Search users by username or displayName — server-side, max 10 results
+// Replaces client-side filtering over GET /api/users
+app.get('/api/users/search', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const q = (req.query.q as string || '').trim().replace('@', '');
+    if (q.length < 2) {
+      return res.status(400).json({ message: 'Query minimal 2 karakter' });
+    }
+
+    const regex = new RegExp(q, 'i');
+    const users = await User.find(
+      { $or: [{ username: regex }, { displayName: regex }] },
+      { password: 0 }
+    ).limit(10);
+
+    res.json(users);
+  } catch (error) {
+    console.error('Search users error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Search user by exact username (legacy endpoint)
+app.get('/api/users/search/:username', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { username } = req.params;
     const searchUsername = username.toLowerCase().replace('@', '');
@@ -251,7 +397,7 @@ app.get('/api/users/search/:username', async (req: Request, res: Response) => {
 
 // Admin endpoint to verify a user
 // Admin endpoint to verify/unverify user
-app.post('/api/admin/verify-user', async (req: Request, res: Response) => {
+app.post('/api/admin/verify-user', authMiddleware, adminMiddleware, async (req: Request, res: Response) => {
   try {
     const { username, isVerified } = req.body;
     
@@ -276,7 +422,7 @@ app.post('/api/admin/verify-user', async (req: Request, res: Response) => {
 });
 
 // Admin endpoint to set admin status
-app.post('/api/admin/set-admin', async (req: Request, res: Response) => {
+app.post('/api/admin/set-admin', authMiddleware, adminMiddleware, async (req: Request, res: Response) => {
   try {
     const { username, isAdmin } = req.body;
     
@@ -297,7 +443,7 @@ app.post('/api/admin/set-admin', async (req: Request, res: Response) => {
 });
 
 // Admin endpoint to ban/unban user
-app.post('/api/admin/ban-user', async (req: Request, res: Response) => {
+app.post('/api/admin/ban-user', authMiddleware, adminMiddleware, async (req: Request, res: Response) => {
   try {
     const { userId, isBanned } = req.body;
     
@@ -322,7 +468,7 @@ app.post('/api/admin/ban-user', async (req: Request, res: Response) => {
 });
 
 // Admin endpoint to get all users with stats
-app.get('/api/admin/users', async (req: Request, res: Response) => {
+app.get('/api/admin/users', authMiddleware, adminMiddleware, async (req: Request, res: Response) => {
   try {
     const users = await User.find({}, { password: 0 }).sort({ createdAt: -1 });
     res.json(users);
@@ -333,7 +479,7 @@ app.get('/api/admin/users', async (req: Request, res: Response) => {
 });
 
 // Admin endpoint to get dashboard statistics
-app.get('/api/admin/stats', async (req: Request, res: Response) => {
+app.get('/api/admin/stats', authMiddleware, adminMiddleware, async (req: Request, res: Response) => {
   try {
     const totalUsers = await User.countDocuments();
     const totalMessages = await Message.countDocuments();
@@ -370,7 +516,7 @@ app.get('/api/admin/stats', async (req: Request, res: Response) => {
 
 // Admin endpoint to delete user
 // Admin endpoint to delete user
-app.delete('/api/admin/users/:userId', async (req: Request, res: Response) => {
+app.delete('/api/admin/users/:userId', authMiddleware, adminMiddleware, async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
     
@@ -394,8 +540,89 @@ app.delete('/api/admin/users/:userId', async (req: Request, res: Response) => {
   }
 });
 
+// ============ Batch Last Messages Endpoint (Fix N+1 Query) ============
+
+// Get last message for ALL conversations of a user in a single query
+app.get('/api/messages/last-messages/:userId', authMiddleware, async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.params;
+    const userObjectId = new mongoose.Types.ObjectId(userId);
+
+    // Use MongoDB aggregation to get last message per conversation partner
+    const lastMessages = await Message.aggregate([
+      {
+        // Match messages where user is sender or receiver (private messages only)
+        $match: {
+          $or: [
+            { senderId: userObjectId },
+            { receiverId: userObjectId }
+          ],
+          groupId: { $exists: false },
+          deletedForEveryone: { $ne: true }
+        }
+      },
+      {
+        // Sort by newest first
+        $sort: { createdAt: -1 }
+      },
+      {
+        // Determine the "other user" in the conversation
+        $addFields: {
+          conversationPartner: {
+            $cond: {
+              if: { $eq: ['$senderId', userObjectId] },
+              then: '$receiverId',
+              else: '$senderId'
+            }
+          }
+        }
+      },
+      {
+        // Group by conversation partner and get the first (newest) message
+        $group: {
+          _id: '$conversationPartner',
+          lastMessage: { $first: '$$ROOT' }
+        }
+      },
+      {
+        // Reshape the output
+        $replaceRoot: {
+          newRoot: {
+            $mergeObjects: [
+              '$lastMessage',
+              { conversationPartnerId: '$_id' }
+            ]
+          }
+        }
+      }
+    ]);
+
+    // Convert to a map: { partnerId: lastMessage }
+    const result: { [key: string]: any } = {};
+    for (const msg of lastMessages) {
+      const partnerId = msg.conversationPartnerId.toString();
+      result[partnerId] = {
+        _id: msg._id,
+        senderId: msg.senderId,
+        receiverId: msg.receiverId,
+        content: msg.content,
+        createdAt: msg.createdAt,
+        isRead: msg.isRead,
+        messageType: msg.messageType,
+        fileUrl: msg.fileUrl,
+        fileName: msg.fileName
+      };
+    }
+
+    res.json(result);
+  } catch (error) {
+    console.error('Get last messages error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // Get messages between two users
-app.get('/api/messages/:userId/:recipientId', async (req: Request, res: Response) => {
+app.get('/api/messages/:userId/:recipientId', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { userId, recipientId } = req.params;
 
@@ -414,7 +641,7 @@ app.get('/api/messages/:userId/:recipientId', async (req: Request, res: Response
 });
 
 // Get call history for a user
-app.get('/api/call-history/:userId', async (req: Request, res: Response) => {
+app.get('/api/call-history/:userId', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
 
@@ -452,7 +679,7 @@ app.get('/api/call-history/:userId', async (req: Request, res: Response) => {
 });
 
 // File upload endpoint
-app.post('/api/upload', upload.single('file'), async (req: Request, res: Response) => {
+app.post('/api/upload', authMiddleware, upload.single('file'), async (req: Request, res: Response) => {
   try {
     if (!req.file) {
       return res.status(400).json({ message: 'No file uploaded' });
@@ -477,7 +704,7 @@ app.post('/api/upload', upload.single('file'), async (req: Request, res: Respons
 // ============ Profile & User Management Routes ============
 
 // Get user profile
-app.get('/api/users/:userId', async (req: Request, res: Response) => {
+app.get('/api/users/:userId', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
     const user = await User.findById(userId, { password: 0 });
@@ -499,7 +726,7 @@ app.get('/api/users/:userId', async (req: Request, res: Response) => {
 });
 
 // Update user profile
-app.put('/api/users/:userId', upload.single('profilePicture'), async (req: Request, res: Response) => {
+app.put('/api/users/:userId', authMiddleware, upload.single('profilePicture'), async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
     const { displayName, email, bio, status } = req.body;
@@ -576,7 +803,7 @@ app.put('/api/users/:userId', upload.single('profilePicture'), async (req: Reque
 });
 
 // Delete message
-app.delete('/api/messages/:messageId', async (req: Request, res: Response) => {
+app.delete('/api/messages/:messageId', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { messageId } = req.params;
     const { userId, deleteForEveryone } = req.body;
@@ -609,7 +836,7 @@ app.delete('/api/messages/:messageId', async (req: Request, res: Response) => {
 });
 
 // Pin/Unpin message
-app.post('/api/messages/:messageId/pin', async (req: Request, res: Response) => {
+app.post('/api/messages/:messageId/pin', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { messageId } = req.params;
 
@@ -630,7 +857,7 @@ app.post('/api/messages/:messageId/pin', async (req: Request, res: Response) => 
 });
 
 // Add reaction to message
-app.post('/api/messages/:messageId/reaction', async (req: Request, res: Response) => {
+app.post('/api/messages/:messageId/reaction', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { messageId } = req.params;
     const { emoji, userId } = req.body;
@@ -673,7 +900,7 @@ app.post('/api/messages/:messageId/reaction', async (req: Request, res: Response
 });
 
 // Remove reaction from message
-app.delete('/api/messages/:messageId/reaction', async (req: Request, res: Response) => {
+app.delete('/api/messages/:messageId/reaction', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { messageId } = req.params;
     const { emoji, userId } = req.body;
@@ -714,7 +941,7 @@ app.delete('/api/messages/:messageId/reaction', async (req: Request, res: Respon
 // ============ Group Chat Routes ============
 
 // Create group
-app.post('/api/groups', async (req: Request, res: Response) => {
+app.post('/api/groups', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { name, description, creator, members } = req.body;
     
@@ -741,7 +968,7 @@ app.post('/api/groups', async (req: Request, res: Response) => {
 });
 
 // Get user groups
-app.get('/api/groups/user/:userId', async (req: Request, res: Response) => {
+app.get('/api/groups/user/:userId', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
     const Group = mongoose.model('Group');
@@ -760,7 +987,7 @@ app.get('/api/groups/user/:userId', async (req: Request, res: Response) => {
 });
 
 // Get group by ID
-app.get('/api/groups/:groupId', async (req: Request, res: Response) => {
+app.get('/api/groups/:groupId', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { groupId } = req.params;
     const Group = mongoose.model('Group');
@@ -782,7 +1009,7 @@ app.get('/api/groups/:groupId', async (req: Request, res: Response) => {
 });
 
 // Get group messages
-app.get('/api/groups/:groupId/messages', async (req: Request, res: Response) => {
+app.get('/api/groups/:groupId/messages', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { groupId } = req.params;
 
@@ -799,7 +1026,7 @@ app.get('/api/groups/:groupId/messages', async (req: Request, res: Response) => 
 });
 
 // Add member to group
-app.post('/api/groups/:groupId/members', async (req: Request, res: Response) => {
+app.post('/api/groups/:groupId/members', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { groupId } = req.params;
     const { userId, addedBy } = req.body;
@@ -834,7 +1061,7 @@ app.post('/api/groups/:groupId/members', async (req: Request, res: Response) => 
 });
 
 // Remove member from group
-app.delete('/api/groups/:groupId/members/:userId', async (req: Request, res: Response) => {
+app.delete('/api/groups/:groupId/members/:userId', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { groupId, userId } = req.params;
     const { removedBy } = req.body;
@@ -867,7 +1094,7 @@ app.delete('/api/groups/:groupId/members/:userId', async (req: Request, res: Res
 });
 
 // Update group
-app.put('/api/groups/:groupId', upload.single('groupPicture'), async (req: Request, res: Response) => {
+app.put('/api/groups/:groupId', authMiddleware, upload.single('groupPicture'), async (req: Request, res: Response) => {
   try {
     const { groupId } = req.params;
     const { name, description, updatedBy } = req.body;
@@ -907,25 +1134,24 @@ app.put('/api/groups/:groupId', upload.single('groupPicture'), async (req: Reque
 // ============ Socket.IO Events ============
 
 io.on('connection', (socket) => {
-  console.log('🔌 User connected:', socket.id);
-
-  // User joins with their userId
+  // User joins with their userId — now verified via JWT middleware
   socket.on('user-connected', async (userId: string) => {
+    // Verify the userId matches the JWT-verified userId (prevent spoofing)
+    const verifiedUserId = socket.data.userId as string;
+    if (verifiedUserId !== userId) {
+      console.warn(`⚠️ userId mismatch: claimed ${userId}, verified ${verifiedUserId}`);
+      userId = verifiedUserId; // Always use verified userId
+    }
+
     // Check if user already has a socket connection
     const existingSocketId = userSockets.get(userId);
     if (existingSocketId && existingSocketId !== socket.id) {
-      console.log(`⚠️ User ${userId} already connected with socket ${existingSocketId}`);
-      console.log(`🔄 Replacing old socket with new socket ${socket.id}`);
-      
-      // Disconnect the old socket
+      // Disconnect the old socket silently
       const existingSocket = io.sockets.sockets.get(existingSocketId);
-      if (existingSocket) {
-        existingSocket.disconnect(true);
-      }
+      if (existingSocket) existingSocket.disconnect(true);
     }
     
     userSockets.set(userId, socket.id);
-    console.log(`👤 User ${userId} mapped to socket ${socket.id}`);
 
     // Update user online status
     await User.findByIdAndUpdate(userId, { isOnline: true });
@@ -934,9 +1160,8 @@ io.on('connection', (socket) => {
     io.emit('user-status-changed', { userId, isOnline: true });
   });
 
-  // Private message
+  // Private message — senderId is derived from verified JWT, not client data
   socket.on('private-message', async (data: { 
-    senderId: string; 
     receiverId: string; 
     content: string;
     messageType?: string;
@@ -946,7 +1171,9 @@ io.on('connection', (socket) => {
     replyTo?: string;
   }) => {
     try {
-      const { senderId, receiverId, content, messageType, fileUrl, fileName, fileType, replyTo } = data;
+      // Use verified userId from JWT — prevents senderId spoofing
+      const senderId = socket.data.userId as string;
+      const { receiverId, content, messageType, fileUrl, fileName, fileType, replyTo } = data;
 
       // Save message to database
       const message = new Message({
@@ -1011,9 +1238,8 @@ io.on('connection', (socket) => {
     }
   });
 
-  // Group message
+  // Group message — senderId derived from verified JWT
   socket.on('group-message', async (data: {
-    senderId: string;
     groupId: string;
     content: string;
     messageType?: string;
@@ -1023,7 +1249,9 @@ io.on('connection', (socket) => {
     replyTo?: string;
   }) => {
     try {
-      const { senderId, groupId, content, messageType, fileUrl, fileName, fileType, replyTo } = data;
+      // Use verified userId from JWT — prevents senderId spoofing
+      const senderId = socket.data.userId as string;
+      const { groupId, content, messageType, fileUrl, fileName, fileType, replyTo } = data;
 
       // Save message to database
       const message = new Message({
@@ -1249,7 +1477,6 @@ io.on('connection', (socket) => {
   // WebRTC Signaling - Call user
   socket.on('call-user', async (data: { callerId: string; receiverId: string; offer: any }) => {
     const { receiverId, offer, callerId } = data;
-    console.log(`📞 Call from ${callerId} to ${receiverId}`);
     
     try {
       // Create call history entry
@@ -1266,21 +1493,14 @@ io.on('connection', (socket) => {
       const callId = `${callerId}-${receiverId}-${Date.now()}`;
       activeCalls.set(callId, (callHistory._id as any).toString());
       
-      console.log(`📝 Call history created: ${callHistory._id}`);
-      
       const receiverSocketId = userSockets.get(receiverId);
-      console.log(`Receiver socket ID: ${receiverSocketId}`);
-      console.log(`Current userSockets map:`, Array.from(userSockets.entries()));
       
       if (receiverSocketId) {
         io.to(receiverSocketId).emit('incoming-call', { callerId, offer, callId });
-        console.log(`✅ Incoming call event sent to ${receiverId} (socket: ${receiverSocketId})`);
       } else {
-        console.log(`❌ Receiver ${receiverId} not found in userSockets`);
         // Update call history as missed
         callHistory.status = 'missed';
         await callHistory.save();
-        // Send error back to caller
         socket.emit('call-failed', { message: 'User tidak online' });
       }
     } catch (error) {
@@ -1291,7 +1511,6 @@ io.on('connection', (socket) => {
   // WebRTC Signaling - Answer call
   socket.on('answer-call', async (data: { callerId: string; receiverId: string; answer: any; callId?: string }) => {
     const { callerId, receiverId, answer, callId } = data;
-    console.log(`📱 Answer from ${receiverId} to caller ${callerId}`);
     
     try {
       // Update call history status to completed
@@ -1299,37 +1518,25 @@ io.on('connection', (socket) => {
         const callHistoryId = activeCalls.get(callId);
         await CallHistory.findByIdAndUpdate(callHistoryId, {
           status: 'completed',
-          startTime: new Date() // Update actual start time when answered
+          startTime: new Date()
         });
-        console.log(`✅ Call history updated: ${callHistoryId} - status: completed`);
       }
       
       const callerSocketId = userSockets.get(callerId);
-      console.log(`Caller socket ID: ${callerSocketId}`);
-      
       if (callerSocketId) {
         io.to(callerSocketId).emit('call-answered', { receiverId, answer });
-        console.log(`✅ Call answered event sent to ${callerId} (socket: ${callerSocketId})`);
-      } else {
-        console.log(`❌ Caller ${callerId} not found in userSockets`);
       }
     } catch (error) {
       console.error('Error updating call history on answer:', error);
     }
   });
 
-  // WebRTC Signaling - ICE candidate
+  // WebRTC Signaling - ICE candidate (no logs — called 10-50x per call)
   socket.on('ice-candidate', (data: { targetUserId: string; senderId: string; candidate: any }) => {
     const { targetUserId, senderId, candidate } = data;
     const targetSocketId = userSockets.get(targetUserId);
-    
-    console.log(`🧊 ICE candidate from ${senderId} to ${targetUserId}`);
-    
     if (targetSocketId) {
       io.to(targetSocketId).emit('ice-candidate', { senderId, candidate });
-      console.log(`✅ ICE candidate sent to ${targetUserId}`);
-    } else {
-      console.log(`❌ Target ${targetUserId} not found for ICE candidate`);
     }
   });
 

@@ -64,9 +64,7 @@ const Hero = () => {
         </nav>
       </header>
 
-      <section className="relative min-h-screen bg-gradient-to-br from-[#1E40AF] via-[#2563EB] to-[#7C3AED] overflow-hidden pt-20 sm:pt-24">
-        {/* Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#1E293B]/20 to-[#1E293B]/40"></div>
+      <section className="relative w-full lg:h-screen min-h-[100vh] bg-blue-600 overflow-hidden flex items-center justify-center pt-24 lg:pt-16">
         
         {/* Subtle Grid Pattern */}
         <div className="absolute inset-0 opacity-10" style={{
@@ -75,7 +73,7 @@ const Hero = () => {
         }}></div>
 
       {/* Hero Content */}
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12 pb-16 sm:pb-20">
+      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-8 mt-10 lg:mt-16">
         <div className="grid lg:grid-cols-2 gap-8 sm:gap-12 items-center">
           {/* Left Content */}
           <div className="space-y-4 sm:space-y-6 text-white">
@@ -105,10 +103,10 @@ const Hero = () => {
             {/* Stats */}
             <div className="flex items-center space-x-3 pt-4">
               <div className="flex -space-x-2">
-                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 border-2 border-white"></div>
-                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 border-2 border-white"></div>
-                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-br from-pink-400 to-pink-600 border-2 border-white"></div>
-                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-br from-red-400 to-red-600 border-2 border-white"></div>
+                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-slate-200 border-2 border-blue-600"></div>
+                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-slate-300 border-2 border-blue-600"></div>
+                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-slate-400 border-2 border-blue-600"></div>
+                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-slate-100 border-2 border-blue-600"></div>
               </div>
               <div className="ml-2">
                 <p className="text-lg sm:text-xl font-bold">99.1%</p>
@@ -119,14 +117,14 @@ const Hero = () => {
 
           {/* Right Content - Phone Mockup */}
           <div className="relative flex items-center justify-center mt-8 lg:mt-0">
-            <div className="relative scale-90 sm:scale-100">
+            <div className="relative scale-90 sm:scale-100 transform lg:translate-y-[-20px] xl:translate-y-0">
               {/* Phone Frame */}
-              <div className="relative w-[280px] h-[560px] bg-gradient-to-br from-gray-900 to-black rounded-[2.5rem] p-2.5 shadow-2xl border-[6px] border-gray-800">
+              <div className="relative w-[280px] lg:w-[300px] h-[580px] lg:h-[600px] bg-slate-900 rounded-[2.5rem] p-2.5 shadow-2xl border-[6px] border-slate-800">
                 {/* Notch */}
-                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-32 h-6 bg-black rounded-b-2xl z-10"></div>
+                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-32 h-6 bg-slate-900 rounded-b-2xl z-10"></div>
                 
                 {/* Screen */}
-                <div className="relative w-full h-full bg-gradient-to-br from-[#1E293B] to-[#0F172A] rounded-[2rem] overflow-hidden">
+                <div className="relative w-full h-full bg-slate-950 rounded-[2rem] overflow-hidden">
                   {/* Status Bar */}
                   <div className="flex items-center justify-between px-6 pt-8 pb-3">
                     <span className="text-white text-xs font-semibold">9:41 AM</span>
@@ -139,7 +137,7 @@ const Hero = () => {
 
                   {/* Chat Header */}
                   <div className="px-5 pb-3 flex items-center space-x-2">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600"></div>
+                    <div className="w-8 h-8 rounded-full bg-blue-500"></div>
                     <div>
                       <h3 className="text-white text-sm font-bold">Sarah Johnson</h3>
                       <p className="text-[10px] text-green-400 flex items-center">

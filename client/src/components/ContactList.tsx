@@ -41,11 +41,20 @@ const ContactList: React.FC<ContactListProps> = ({
 }) => {
   const [unreadCounts, setUnreadCounts] = useState<{ [key: string]: number }>({});
   const [highlightedContact, setHighlightedContact] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const previousOrderRef = useRef<string[]>([]);
   
-  // Filter out current user from contacts and sort by last message
+  // Filter out current user, apply search filter, and sort by last message
   const filteredContacts = contacts
     .filter(contact => contact._id !== currentUserId)
+    .filter(contact => {
+      if (!searchQuery.trim()) return true;
+      const query = searchQuery.toLowerCase();
+      return (
+        contact.username.toLowerCase().includes(query) ||
+        (contact.displayName || '').toLowerCase().includes(query)
+      );
+    })
     .sort((a, b) => {
       const lastMessageA = lastMessages[a._id];
       const lastMessageB = lastMessages[b._id];
@@ -66,6 +75,8 @@ const ContactList: React.FC<ContactListProps> = ({
       // If neither has messages, maintain original order
       return 0;
     });
+  
+  const totalContacts = contacts.filter(c => c._id !== currentUserId).length;
   
   // Detect when contact order changes and highlight the moved contact
   useEffect(() => {
@@ -109,8 +120,43 @@ const ContactList: React.FC<ContactListProps> = ({
   return (
     <div className="w-full flex flex-col h-full">
       <div className="px-4 md:px-6 py-3 md:py-4 border-b border-[#64748B]/10">
-        <h2 className="text-sm md:text-base font-bold text-[#1E293B]">Kontak</h2>
-        <p className="text-xs text-[#64748B] mt-1">{filteredContacts.length} kontak</p>
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-sm md:text-base font-bold text-[#1E293B]">Kontak</h2>
+          <p className="text-xs text-[#64748B]">{totalContacts} kontak</p>
+        </div>
+        {/* Search Input */}
+        <div className="relative">
+          <svg 
+            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#64748B]" 
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Cari kontak..."
+            className="w-full pl-9 pr-8 py-2 bg-[#F1F5F9] border border-transparent rounded-lg text-sm text-[#1E293B] placeholder-[#94A3B8] focus:outline-none focus:ring-2 focus:ring-[#2563EB]/30 focus:border-[#2563EB]/30 focus:bg-white transition-all duration-200"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-[#94A3B8] hover:text-[#64748B] rounded-full hover:bg-[#E2E8F0] transition-all duration-200"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+        </div>
+        {searchQuery && (
+          <p className="text-xs text-[#64748B] mt-1.5">
+            {filteredContacts.length === 0 ? 'Tidak ditemukan' : `${filteredContacts.length} hasil`}
+          </p>
+        )}
       </div>
       
       <div className="flex-1 overflow-y-auto">

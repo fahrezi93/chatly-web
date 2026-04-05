@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
-import axios from 'axios';
+import api from '../utils/api';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -10,8 +10,6 @@ interface SettingsModalProps {
     email: string;
   };
 }
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, currentUser }) => {
   const [activeTab, setActiveTab] = useState<'account' | 'privacy' | 'notifications'>('account');
@@ -85,7 +83,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, currentU
     
     try {
       // Call API to change password
-      await axios.post(`${API_URL}/api/auth/change-password`, {
+      await api.post(`/api/auth/change-password`, {
         email: currentUser.email,
         oldPassword,
         newPassword

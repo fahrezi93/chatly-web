@@ -32,25 +32,16 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ user, onOpenProfile, 
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 px-3 py-2 hover:bg-white/10 rounded-lg transition-all duration-200"
+        className="flex items-center justify-center p-1 md:p-1.5 hover:bg-slate-100 rounded-full transition-all duration-200 flex-shrink-0 outline-none"
+        title="Profil Anda"
       >
-        <Avatar username={user.username} isOnline={user.isOnline} size="sm" profilePicture={user.profilePicture} isVerified={user.isVerified} />
-        <div className="flex items-center gap-1">
-          <span className="text-sm font-semibold text-white hidden sm:inline">{user.displayName || user.username}</span>
-          {user.isVerified && <VerifiedBadge size="sm" />}
+        <div className="flex-shrink-0">
+          <Avatar username={user.username} isOnline={user.isOnline} size="sm" profilePicture={user.profilePicture} isVerified={user.isVerified} />
         </div>
-        <svg 
-          className={`w-4 h-4 text-white/80 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} 
-          fill="none" 
-          stroke="currentColor" 
-          viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-        </svg>
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-large border border-neutral-100 py-2 z-50 animate-[fadeIn_0.2s_ease-out]">
+        <div className="absolute left-0 mt-2 w-64 bg-white rounded-xl shadow-large border border-slate-200 py-2 z-[60] animate-[fadeIn_0.2s_ease-out]">
           {/* User Info */}
           <div className="px-4 py-3 border-b border-[#64748B]/10">
             <div className="flex items-center gap-3">

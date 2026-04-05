@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
+import api from '../utils/api';
 import Avatar from './Avatar';
 import { User } from '../types';
 
@@ -9,8 +9,6 @@ interface AddContactModalProps {
   onContactAdded: (user: User) => void;
   currentUserId: string;
 }
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const AddContactModal: React.FC<AddContactModalProps> = ({ 
   isOpen, 
@@ -41,15 +39,11 @@ const AddContactModal: React.FC<AddContactModalProps> = ({
     searchTimeoutRef.current = setTimeout(async () => {
       try {
         const cleanUsername = searchUsername.trim().replace('@', '').toLowerCase();
-        const response = await axios.get(`${API_URL}/api/users`);
+        // Use server-side search endpoint \u2014 returns max 10 results, no full dump
+        const response = await api.get(`/api/users/search?q=${encodeURIComponent(cleanUsername)}`);
         
-        // Filter users by username match
-        const filtered = response.data
-          .filter((user: User) => 
-            user._id !== currentUserId && 
-            user.username.toLowerCase().includes(cleanUsername)
-          )
-          .slice(0, 5); // Limit to 5 results
+        // Filter out current user from results
+        const filtered = response.data.filter((user: User) => user._id !== currentUserId);
         
         setSearchResults(filtered);
         setShowSuggestions(filtered.length > 0);
