@@ -94,4 +94,12 @@ const MessageSchema: Schema = new Schema({
   timestamps: true
 });
 
+// Compound indexes untuk query yang sering digunakan
+// Mempercepat GET /api/messages/:userId/:recipientId
+MessageSchema.index({ senderId: 1, receiverId: 1, createdAt: -1 });
+// Mempercepat GET /api/groups/:groupId/messages
+MessageSchema.index({ groupId: 1, createdAt: -1 });
+// Mempercepat query unread messages
+MessageSchema.index({ receiverId: 1, isRead: 1 });
+
 export default mongoose.model<IMessage>('Message', MessageSchema);

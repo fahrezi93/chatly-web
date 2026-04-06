@@ -39,10 +39,14 @@ const Avatar: React.FC<AvatarProps> = ({ username, isOnline = false, size = 'md'
   // Construct proper image URL
   const getImageUrl = () => {
     if (!profilePicture) return null;
-    if (profilePicture.startsWith('http://') || profilePicture.startsWith('https://')) {
-      return profilePicture;
+    const trimmedUrl = profilePicture.trim();
+    // If it's already an absolute URL (http://, https://, or //)
+    if (/^(https?:\/\/|\/\/)/i.test(trimmedUrl)) {
+      return trimmedUrl.startsWith('//') ? `https:${trimmedUrl}` : trimmedUrl;
     }
-    return `${API_URL}${profilePicture}`;
+    // For relative paths, prepend API_URL and ensure correct slashing
+    const separator = (API_URL.endsWith('/') || trimmedUrl.startsWith('/')) ? '' : '/';
+    return `${API_URL}${separator}${trimmedUrl}`;
   };
 
   const imageUrl = getImageUrl();

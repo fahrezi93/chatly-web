@@ -72,6 +72,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
 }) => {
   const { socket } = useSocket();
   const [messages, setMessages] = useState<Message[]>([]);
+  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
   const [newMessage, setNewMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [otherUserTyping, setOtherUserTyping] = useState(false);
@@ -373,6 +374,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
   // Load messages when recipient or group changes
   useEffect(() => {
     const loadMessages = async () => {
+      setIsLoadingMessages(true);
       try {
         if (viewMode === 'group' && groupId) {
           // Load group messages
@@ -407,6 +409,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
         }
       } catch (error) {
         // Error loading messages
+      } finally {
+        setIsLoadingMessages(false);
       }
     };
 
@@ -414,6 +418,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
     if ((recipientId && currentUserId) || (groupId && viewMode === 'group')) {
       // Reset states when switching chats
       setReplyingTo(null);
+      setMessages([]); // Clear messages immediately to avoid showing previous chat
       previousMessagesRef.current = [];
       hasScrolledToUnread.current = false; // Reset scroll flag when switching chats
       firstUnreadMessageRef.current = null; // Reset unread ref
@@ -1049,7 +1054,16 @@ const ChatWindow: React.FC<ChatWindowProps> = ({
       )}
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-3 md:p-6 space-y-3 bg-[#F8FAFC] messages-container scroll-smooth">
+      <div className="flex-1 overflow-y-auto p-3 md:p-6 space-y-3 bg-[#F8FAFC] messages-container scroll-smooth relative">
+        {/* Loading overlay when switching chats */}
+        {isLoadingMessages && (
+          <div className="absolute inset-0 flex items-center justify-center bg-[#F8FAFC] z-10">
+            <div className="flex flex-col items-center gap-3">
+              <div className="w-8 h-8 rounded-full border-2 border-[#2563EB]/20 border-t-[#2563EB] animate-spin" />
+              <p className="text-xs text-[#94A3B8] font-medium">Memuat pesan...</p>
+            </div>
+          </div>
+        )}
         {/* Show search results or all messages */}
         {(searchQuery ? filteredMessages : messages).map((message, index) => {
           // Determine if message.senderId is a string or object

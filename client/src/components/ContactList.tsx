@@ -112,7 +112,7 @@ const ContactList: React.FC<ContactListProps> = ({
     };
     
     updateUnreadCounts();
-    const interval = setInterval(updateUnreadCounts, 1000);
+    const interval = setInterval(updateUnreadCounts, 5000); // 5 detik cukup, hemat CPU
     
     return () => clearInterval(interval);
   }, [contacts, currentUserId]); // Fixed dependency

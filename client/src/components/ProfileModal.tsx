@@ -93,9 +93,9 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, user, onClose, onUp
             <div className="relative">
               {previewUrl ? (
                 <img
-                  src={previewUrl.startsWith('blob:') || previewUrl.startsWith('data:') || previewUrl.startsWith('http://') || previewUrl.startsWith('https://') 
+                  src={previewUrl.startsWith('blob:') || previewUrl.startsWith('data:') || /^(https?:\/\/|\/\/)/i.test(previewUrl.trim())
                     ? previewUrl 
-                    : `${API_URL}${previewUrl}`}
+                    : `${API_URL}${previewUrl.trim().startsWith('/') ? '' : '/'}${previewUrl.trim()}`}
                   alt="Profile"
                   className="w-20 h-20 md:w-24 md:h-24 rounded-full object-cover shadow-soft"
                   onError={(e) => {

@@ -41,7 +41,7 @@ const ProfileDropdown: React.FC<ProfileDropdownProps> = ({ user, onOpenProfile, 
       </button>
 
       {isOpen && (
-        <div className="absolute left-0 mt-2 w-64 bg-white rounded-xl shadow-large border border-slate-200 py-2 z-[60] animate-[fadeIn_0.2s_ease-out]">
+        <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-large border border-slate-200 py-2 z-[60] origin-top-right animate-scale-in">
           {/* User Info */}
           <div className="px-4 py-3 border-b border-[#64748B]/10">
             <div className="flex items-center gap-3">

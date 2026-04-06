@@ -227,6 +227,13 @@ app.post('/api/auth/register', authLimiter, async (req: Request, res: Response) 
   try {
     const { username, displayName, email, password } = req.body;
 
+    // Validate password length
+    if (!password || password.length < 8) {
+      return res.status(400).json({
+        message: 'Password minimal 8 karakter'
+      });
+    }
+
     // Validate username format
     if (!/^[a-z0-9_]{3,20}$/.test(username)) {
       return res.status(400).json({ 
@@ -625,15 +632,27 @@ app.get('/api/messages/last-messages/:userId', authMiddleware, async (req: Reque
 app.get('/api/messages/:userId/:recipientId', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { userId, recipientId } = req.params;
+    const verifiedUserId = (req as AuthRequest).userId;
+
+    // IDOR protection: hanya boleh fetch pesan milik sendiri
+    if (verifiedUserId !== userId) {
+      return res.status(403).json({ message: 'Akses ditolak.' });
+    }
+
+    const page = parseInt(req.query.page as string) || 0;
+    const limit = 50;
 
     const messages = await Message.find({
       $or: [
         { senderId: userId, receiverId: recipientId },
         { senderId: recipientId, receiverId: userId }
       ]
-    }).sort({ createdAt: 1 });
+    })
+      .sort({ createdAt: -1 })
+      .skip(page * limit)
+      .limit(limit);
 
-    res.json(messages);
+    res.json(messages.reverse());
   } catch (error) {
     console.error('Get messages error:', error);
     res.status(500).json({ message: 'Server error' });
@@ -729,6 +748,13 @@ app.get('/api/users/:userId', authMiddleware, async (req: Request, res: Response
 app.put('/api/users/:userId', authMiddleware, upload.single('profilePicture'), async (req: Request, res: Response) => {
   try {
     const { userId } = req.params;
+    const verifiedUserId = (req as AuthRequest).userId;
+
+    // IDOR protection: hanya boleh edit profil sendiri
+    if (verifiedUserId !== userId) {
+      return res.status(403).json({ message: 'Akses ditolak.' });
+    }
+
     const { displayName, email, bio, status } = req.body;
 
     const updateData: any = {};
@@ -806,7 +832,8 @@ app.put('/api/users/:userId', authMiddleware, upload.single('profilePicture'), a
 app.delete('/api/messages/:messageId', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { messageId } = req.params;
-    const { userId, deleteForEveryone } = req.body;
+    const { deleteForEveryone } = req.body;
+    const userId = (req as AuthRequest).userId!; // Gunakan userId dari JWT
 
     const message = await Message.findById(messageId);
     if (!message) {
@@ -822,8 +849,8 @@ app.delete('/api/messages/:messageId', authMiddleware, async (req: Request, res:
       if (!message.deletedFor) {
         message.deletedFor = [];
       }
-      if (!message.deletedFor.includes(userId)) {
-        message.deletedFor.push(userId);
+      if (!message.deletedFor.includes(userId as any)) {
+        message.deletedFor.push(userId as any);
       }
       await message.save();
     }
@@ -839,10 +866,19 @@ app.delete('/api/messages/:messageId', authMiddleware, async (req: Request, res:
 app.post('/api/messages/:messageId/pin', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { messageId } = req.params;
+    const pinUserId = (req as AuthRequest).userId!;
 
     const message = await Message.findById(messageId);
     if (!message) {
       return res.status(404).json({ message: 'Message not found' });
+    }
+
+    // Hanya peserta percakapan yang boleh pin
+    const isParticipant =
+      message.senderId.toString() === pinUserId ||
+      (message.receiverId && message.receiverId.toString() === pinUserId);
+    if (!isParticipant) {
+      return res.status(403).json({ message: 'Akses ditolak.' });
     }
 
     // Toggle pin status
@@ -860,7 +896,8 @@ app.post('/api/messages/:messageId/pin', authMiddleware, async (req: Request, re
 app.post('/api/messages/:messageId/reaction', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { messageId } = req.params;
-    const { emoji, userId } = req.body;
+    const { emoji } = req.body;
+    const userId = (req as AuthRequest).userId!; // Gunakan userId dari JWT
 
     const message = await Message.findById(messageId);
     if (!message) {
@@ -878,15 +915,15 @@ app.post('/api/messages/:messageId/reaction', authMiddleware, async (req: Reques
     if (existingReactionIndex >= 0) {
       // Check if user already reacted with this emoji
       const existingReaction = message.reactions[existingReactionIndex];
-      if (!existingReaction.users.includes(userId)) {
-        existingReaction.users.push(userId);
+      if (!existingReaction.users.includes(userId as any)) {
+        existingReaction.users.push(userId as any);
         existingReaction.count = existingReaction.users.length;
       }
     } else {
       // Create new reaction
       message.reactions.push({
         emoji,
-        users: [userId],
+        users: [userId as any],
         count: 1
       });
     }
@@ -903,7 +940,8 @@ app.post('/api/messages/:messageId/reaction', authMiddleware, async (req: Reques
 app.delete('/api/messages/:messageId/reaction', authMiddleware, async (req: Request, res: Response) => {
   try {
     const { messageId } = req.params;
-    const { emoji, userId } = req.body;
+    const { emoji } = req.body;
+    const userId = (req as AuthRequest).userId!; // Gunakan userId dari JWT
 
     const message = await Message.findById(messageId);
     if (!message) {
@@ -1013,12 +1051,17 @@ app.get('/api/groups/:groupId/messages', authMiddleware, async (req: Request, re
   try {
     const { groupId } = req.params;
 
+    const page = parseInt(req.query.page as string) || 0;
+    const limit = 50;
+
     const messages = await Message.find({ groupId })
       .populate('senderId', '-password')
       .populate('replyTo')
-      .sort({ createdAt: 1 });
+      .sort({ createdAt: -1 })
+      .skip(page * limit)
+      .limit(limit);
 
-    res.json(messages);
+    res.json(messages.reverse());
   } catch (error) {
     console.error('Get group messages error:', error);
     res.status(500).json({ message: 'Server error' });
@@ -1615,6 +1658,16 @@ io.on('connection', (socket) => {
 
       // Broadcast offline status
       io.emit('user-status-changed', { userId: disconnectedUserId, isOnline: false });
+
+      // Cleanup stale active calls untuk mencegah memory leak
+      for (const [callId, historyId] of activeCalls.entries()) {
+        if (callId.startsWith(`${disconnectedUserId}-`) || callId.includes(`-${disconnectedUserId}-`)) {
+          try {
+            await CallHistory.findByIdAndUpdate(historyId, { status: 'missed', endTime: new Date() });
+          } catch (_) { /* ignore */ }
+          activeCalls.delete(callId);
+        }
+      }
     }
   });
 });

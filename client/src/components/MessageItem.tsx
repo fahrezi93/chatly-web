@@ -20,9 +20,10 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 // Helper function to detect and linkify URLs
 const linkifyText = (text: string) => {
+  if (!text) return '';
   // Regex to match URLs
   const urlRegex = /(https?:\/\/[^\s]+)/g;
-  const parts = text.split(urlRegex);
+  const parts = text.toString().split(urlRegex);
   
   return parts.map((part, index) => {
     if (part.match(urlRegex)) {
@@ -41,6 +42,19 @@ const linkifyText = (text: string) => {
     }
     return part;
   });
+};
+
+// Helper function to handle media URLs robustly
+const getMediaUrl = (url: string | undefined) => {
+  if (!url) return '';
+  const trimmedUrl = url.trim();
+  // If it's already an absolute URL (http://, https://, or //)
+  if (/^(https?:\/\/|\/\/)/i.test(trimmedUrl)) {
+    return trimmedUrl.startsWith('//') ? `https:${trimmedUrl}` : trimmedUrl;
+  }
+  // For relative paths, prepend API_URL and ensure correct slashing
+  const separator = (API_URL.endsWith('/') || trimmedUrl.startsWith('/')) ? '' : '/';
+  return `${API_URL}${separator}${trimmedUrl}`;
 };
 
 const MessageItem = forwardRef<HTMLDivElement, MessageItemProps>(({
@@ -216,9 +230,7 @@ const MessageItem = forwardRef<HTMLDivElement, MessageItemProps>(({
           {message.messageType === 'image' && message.fileUrl && (
             <div className="relative">
               <img 
-                src={message.fileUrl.startsWith('http://') || message.fileUrl.startsWith('https://') 
-                  ? message.fileUrl 
-                  : `${API_URL}${message.fileUrl}`}
+                src={getMediaUrl(message.fileUrl)}
                 alt={message.fileName || 'Image'} 
                 className="w-full max-w-[280px] md:max-w-[320px] h-auto max-h-[400px] object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
                 style={{ aspectRatio: 'auto' }}
@@ -239,9 +251,7 @@ const MessageItem = forwardRef<HTMLDivElement, MessageItemProps>(({
               {/* Image Preview Modal */}
               {showImagePreview && (
                 <ImagePreviewModal
-                  imageUrl={message.fileUrl.startsWith('http://') || message.fileUrl.startsWith('https://') 
-                    ? message.fileUrl 
-                    : `${API_URL}${message.fileUrl}`}
+                  imageUrl={getMediaUrl(message.fileUrl)}
                   fileName={message.fileName}
                   onClose={() => setShowImagePreview(false)}
                 />
@@ -255,9 +265,7 @@ const MessageItem = forwardRef<HTMLDivElement, MessageItemProps>(({
               <button
                 onClick={async () => {
                   setIsLoadingFile(true);
-                  const url = message.fileUrl?.startsWith('http://') || message.fileUrl?.startsWith('https://') 
-                    ? message.fileUrl 
-                    : `${API_URL}${message.fileUrl}`;
+                  const url = getMediaUrl(message.fileUrl);
                   
                   // Simulate loading for better UX (give time for tab to open)
                   setTimeout(() => {

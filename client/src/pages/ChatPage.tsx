@@ -51,8 +51,23 @@ const ChatPage: React.FC = () => {
   // View mode: 'chat' or 'group'
   const [viewMode, setViewMode] = useState<'chat' | 'group'>('chat');
 
-  // Mobile state
   const [showSidebar, setShowSidebar] = useState(true);
+
+  // Monitor window resize to handle mobile/desktop transitions
+  useEffect(() => {
+    const handleResize = () => {
+      // If we move to desktop size, ensure sidebar is visible
+      if (window.innerWidth >= 768) {
+        setShowSidebar(true);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    // Initial check
+    handleResize();
+    
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   useEffect(() => {
     // Check authentication
@@ -262,16 +277,20 @@ const ChatPage: React.FC = () => {
     setSelectedUserId(userId);
     setSelectedGroupId(null);
     setViewMode('chat');
-    // Hide sidebar on mobile when chat selected
-    setShowSidebar(false);
+    // Hide sidebar ONLY on mobile when chat selected
+    if (window.innerWidth < 768) {
+      setShowSidebar(false);
+    }
   };
 
   const handleSelectGroup = (groupId: string) => {
     setSelectedGroupId(groupId);
     setSelectedUserId(null);
     setViewMode('group');
-    // Hide sidebar on mobile when group selected
-    setShowSidebar(false);
+    // Hide sidebar ONLY on mobile when group selected
+    if (window.innerWidth < 768) {
+      setShowSidebar(false);
+    }
   };
 
   // Handler to update last message when a message is sent or received
@@ -338,7 +357,57 @@ const ChatPage: React.FC = () => {
         `}>
           {/* WhatsApp-style Sidebar Header */}
           <div className="flex items-center justify-between px-3 md:px-4 py-2 bg-white h-[60px] flex-shrink-0">
+            {/* Branding - Now on the Left */}
             <div className="flex items-center flex-shrink-0">
+              <span className="font-bold text-xl bg-gradient-to-r from-[#2563EB] to-[#3B82F6] bg-clip-text text-transparent px-2 tracking-tight">
+                Chatly
+              </span>
+            </div>
+
+            {/* Actions & Profile - Now on the Right */}
+            <div className="flex items-center gap-1 md:gap-2 text-slate-500 flex-shrink-0">
+              {/* Desktop-only action icons */}
+              <div className="hidden md:flex items-center gap-0.5 md:gap-1.5">
+                <button
+                  onClick={() => {
+                    setShowCallHistory(true);
+                    setMissedCallsCount(0);
+                    const lastViewedKey = `callHistory_lastViewed_${currentUserId}`;
+                    localStorage.setItem(lastViewedKey, new Date().toISOString());
+                  }}
+                  className="p-2 hover:bg-slate-100 rounded-full transition-colors relative"
+                  title="Riwayat Panggilan"
+                >
+                  <svg className="w-[20px] h-[20px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  {missedCallsCount > 0 && (
+                    <span className="absolute top-0.5 right-0.5 bg-red-500 text-white text-[9px] font-bold rounded-full min-w-[14px] h-[14px] flex items-center justify-center shadow-sm border border-white">
+                      {missedCallsCount > 99 ? '99+' : missedCallsCount}
+                    </span>
+                  )}
+                </button>
+                <button
+                  onClick={() => setShowAddContact(true)}
+                  className="p-2 hover:bg-slate-100 rounded-full transition-colors"
+                  title="Tambah Kontak"
+                >
+                  <svg className="w-[20px] h-[20px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                  </svg>
+                </button>
+                <button
+                  onClick={() => setShowCreateGroup(true)}
+                  className="p-2 hover:bg-slate-100 rounded-full transition-colors"
+                  title="Grup Baru"
+                >
+                  <svg className="w-[20px] h-[20px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Profile Dropdown - Far right */}
               <ProfileDropdown
                 user={currentUser}
                 onOpenProfile={() => setShowProfileModal(true)}
@@ -346,45 +415,6 @@ const ChatPage: React.FC = () => {
                 onOpenPreferences={() => setShowPreferencesModal(true)}
                 onLogout={handleLogout}
               />
-            </div>
-            <div className="flex items-center gap-0.5 md:gap-1.5 text-slate-500 flex-shrink-0">
-              <button
-                onClick={() => {
-                  setShowCallHistory(true);
-                  setMissedCallsCount(0);
-                  const lastViewedKey = `callHistory_lastViewed_${currentUserId}`;
-                  localStorage.setItem(lastViewedKey, new Date().toISOString());
-                }}
-                className="p-2 hover:bg-slate-100 rounded-full transition-colors relative"
-                title="Riwayat Panggilan"
-              >
-                <svg className="w-[20px] h-[20px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                {missedCallsCount > 0 && (
-                  <span className="absolute top-0.5 right-0.5 bg-red-500 text-white text-[9px] font-bold rounded-full min-w-[14px] h-[14px] flex items-center justify-center shadow-sm border border-white">
-                    {missedCallsCount > 99 ? '99+' : missedCallsCount}
-                  </span>
-                )}
-              </button>
-              <button
-                onClick={() => setShowAddContact(true)}
-                className="p-2 hover:bg-slate-100 rounded-full transition-colors"
-                title="Tambah Kontak"
-              >
-                <svg className="w-[20px] h-[20px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                </svg>
-              </button>
-              <button
-                onClick={() => setShowCreateGroup(true)}
-                className="p-2 hover:bg-slate-100 rounded-full transition-colors"
-                title="Grup Baru"
-              >
-                <svg className="w-[20px] h-[20px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                </svg>
-              </button>
             </div>
           </div>
 
