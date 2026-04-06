@@ -15,75 +15,87 @@ const Features = () => {
         {/* Bento Grid Layout */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 auto-rows-[minmax(250px,auto)] lg:auto-rows-[300px]">
           
-          {/* Card 1: Instant Messaging (col-span-1 to col-span-2) */}
-          <div className="relative md:col-span-2 bg-white rounded-[2.5rem] p-8 lg:p-12 overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-500 flex flex-col justify-between border-2 border-slate-100">
+          {/* Card 1: Instant Messaging */}
+          <div className="group relative md:col-span-2 bg-white rounded-[2.5rem] p-8 lg:p-12 overflow-hidden shadow-sm hover:shadow-2xl hover:shadow-blue-500/10 hover:-translate-y-2 transition-all duration-500 flex flex-col justify-between border-2 border-slate-100">
             {/* Giant Watermark Icon */}
-            <div className="absolute -bottom-16 -right-16 text-slate-50 opacity-80 pointer-events-none transform -rotate-12 transition-transform duration-700 group-hover:scale-110">
+            <div className="absolute -bottom-16 -right-16 text-blue-50 opacity-[0.4] group-hover:opacity-100 pointer-events-none transform -rotate-12 transition-all duration-700 group-hover:scale-110 group-hover:rotate-0">
               <MessageSquare size={380} strokeWidth={1} />
             </div>
-            
-            <div className="relative z-10 w-16 h-16 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mb-8">
-              <MessageSquare size={32} strokeWidth={2} />
+
+            <div className="relative z-10">
+              <div className="w-16 h-16 bg-blue-600/10 text-blue-600 rounded-2xl flex items-center justify-center mb-8 group-hover:scale-110 transition-transform duration-500">
+                <MessageSquare size={32} strokeWidth={2.5} />
+              </div>
+              <div className="max-w-md">
+                <h4 className="text-3xl lg:text-4xl font-bold mb-4 tracking-tight">Pesan Instan <br className="hidden md:block"/> Real-time</h4>
+                <p className="text-slate-500 font-medium leading-relaxed">
+                  Kirim pesan teks, suara, dan file secepat kilat. Alur komunikasi yang mengalir murni tanpa hambatan pemrosesan.
+                </p>
+              </div>
             </div>
-            <div className="relative z-10 max-w-md mt-auto">
-              <h4 className="text-3xl lg:text-4xl font-bold mb-4 tracking-tight">Pesan Instan <br className="hidden md:block"/> Tanpa Batas</h4>
-              <p className="text-slate-500 font-medium leading-relaxed">
-                Kirim pesan teks, suara, dan file dengan kecepatan kilat. Alur komunikasi yang mengalir murni tanpa hambatan pemrosesan.
-              </p>
+
+            {/* Tiny UI Preview */}
+            <div className="relative z-10 mt-12 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity duration-700">
+              <div className="bg-blue-600 text-white text-[10px] px-3 py-1 rounded-full animate-bounce">Typing...</div>
+              <div className="bg-slate-100 text-slate-400 text-[10px] px-3 py-1 rounded-full">Delivered</div>
             </div>
           </div>
 
-          {/* Card 2: Video Call (row-span-2, Tall) */}
-          <div className="relative md:col-span-1 md:row-span-2 bg-blue-600 rounded-[2.5rem] p-8 lg:p-12 overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-600/30 hover:-translate-y-1 transition-all duration-500 flex flex-col border-2 border-transparent">
+          {/* Card 2: Video Call (Taller) */}
+          <div className="group relative md:col-span-1 md:row-span-2 bg-gradient-to-b from-blue-600 to-indigo-700 rounded-[2.5rem] p-8 lg:p-12 overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-blue-600/40 hover:-translate-y-2 transition-all duration-500 flex flex-col border-2 border-white/10">
              {/* Giant Watermark Icon */}
-             <div className="absolute -top-10 -right-10 text-white opacity-[0.07] pointer-events-none transform rotate-12 transition-transform duration-700 group-hover:rotate-45">
+             <div className="absolute -top-10 -right-10 text-white opacity-[0.1] pointer-events-none transform rotate-12 transition-all duration-700 group-hover:scale-125 group-hover:-rotate-12">
               <Video size={400} strokeWidth={1.5} />
             </div>
 
-            <div className="relative z-10 w-16 h-16 bg-white/20 backdrop-blur-md text-white rounded-2xl flex items-center justify-center mb-auto border border-white/30 hidden md:flex">
-              <Video size={32} strokeWidth={2} />
+            <div className="relative z-10 w-16 h-16 bg-white/20 backdrop-blur-md text-white rounded-2xl flex items-center justify-center mb-auto border border-white/30 hidden md:flex group-hover:bg-white/30 group-hover:scale-110 transition-all duration-500">
+              <Video size={32} strokeWidth={2.5} />
             </div>
 
             <div className="relative z-10 mt-auto pt-16 md:pt-0">
-               <h4 className="text-3xl lg:text-4xl font-bold text-white mb-4 tracking-tight">Video Call<br/> Kristal</h4>
+               <div className="flex items-center space-x-2 mb-4">
+                 <span className="flex h-2 w-2 rounded-full bg-red-400 animate-pulse"></span>
+                 <span className="text-xs font-bold text-white/70 uppercase tracking-widest">4K HD Available</span>
+               </div>
+               <h4 className="text-3xl lg:text-4xl font-bold text-white mb-4 tracking-tight">Kualitas<br/> Tanpa Batas</h4>
                <p className="text-blue-100 font-medium leading-relaxed">
-                 Resolusi tinggi, stabilisasi koneksi, tanpa patah-patah. Bertatap muka dari jarak ribuan kilometer layaknya dalam satu meja konferensi.
+                 Resolusi tinggi, stabilisasi koneksi, tanpa patah-patah. Bertatap muka dari jarak jauh layaknya dalam satu meja.
                </p>
             </div>
           </div>
 
-          {/* Card 3: Keamanan (col-span-1) */}
-          <div className="relative md:col-span-1 bg-slate-950 rounded-[2.5rem] p-8 lg:p-10 overflow-hidden shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-500 flex flex-col justify-end border-2 border-[#0B0F19]">
+          {/* Card 3: Security */}
+          <div className="group relative md:col-span-1 bg-slate-950 rounded-[2.5rem] p-8 lg:p-10 overflow-hidden shadow-lg hover:shadow-2xl hover:shadow-indigo-500/20 hover:-translate-y-2 transition-all duration-500 flex flex-col justify-end border-2 border-white/5">
              {/* Giant Watermark Icon */}
-             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white opacity-[0.03] pointer-events-none transition-transform duration-700 group-hover:scale-125">
-               <Shield size={300} strokeWidth={1.5} />
+             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-blue-500 opacity-[0.05] pointer-events-none transition-all duration-700 group-hover:scale-150 group-hover:opacity-[0.08]">
+               <Shield size={320} strokeWidth={1} />
              </div>
 
-            <div className="relative z-10">
-               <div className="w-12 h-12 bg-white/10 text-white rounded-xl flex items-center justify-center mb-6 backdrop-blur-sm border border-white/5">
-                 <Shield size={24} strokeWidth={1.5} />
+            <div className="relative z-10 transition-transform duration-500 group-hover:translate-x-1">
+               <div className="w-12 h-12 bg-indigo-600 text-white rounded-xl flex items-center justify-center mb-6 shadow-[0_0_20px_rgba(79,70,229,0.4)]">
+                 <Shield size={24} strokeWidth={2} />
                </div>
                <h4 className="text-2xl font-bold text-white mb-2 tracking-tight">Keamanan Penuh</h4>
                <p className="text-slate-400 text-sm font-medium leading-relaxed">
-                 Enkripsi murni. Tak ada siapa pun yang tahu apa yang Anda diskusikan.
+                 End-to-end encryption. Rahasia Anda tetap menjadi milik Anda selamanya.
                </p>
             </div>
           </div>
 
-          {/* Card 4: Kolaborasi Grup (col-span-1) */}
-          <div className="relative md:col-span-1 bg-slate-200/50 rounded-[2.5rem] p-8 lg:p-10 overflow-hidden hover:bg-slate-200 transition-all duration-500 flex flex-col justify-end border-2 border-transparent">
+          {/* Card 4: Team Collaboration */}
+          <div className="group relative md:col-span-1 bg-slate-100 rounded-[2.5rem] p-8 lg:p-10 overflow-hidden hover:bg-white hover:shadow-xl hover:-translate-y-2 transition-all duration-500 flex flex-col justify-end border-2 border-transparent hover:border-slate-200">
             {/* Giant Watermark Icon */}
-            <div className="absolute -bottom-10 -right-4 text-slate-300 opacity-50 pointer-events-none transition-transform duration-700 hover:rotate-12">
-               <Users size={200} strokeWidth={1.5} />
+            <div className="absolute -bottom-10 -right-4 text-blue-600 opacity-[0.05] group-hover:opacity-[0.1] pointer-events-none transition-all duration-700 group-hover:-translate-x-4">
+               <Users size={250} strokeWidth={1.5} />
             </div>
 
-            <div className="relative z-10">
-               <div className="w-12 h-12 bg-slate-100 text-slate-700 rounded-xl flex items-center justify-center mb-6 shadow-sm border border-slate-200">
-                 <Users size={24} strokeWidth={1.5} />
+            <div className="relative z-10 transition-transform duration-500 group-hover:translate-x-1">
+               <div className="w-12 h-12 bg-white text-blue-600 rounded-xl flex items-center justify-center mb-6 shadow-sm border border-slate-200 group-hover:border-blue-200 group-hover:text-blue-700 transition-colors duration-500">
+                 <Users size={24} strokeWidth={2} />
                </div>
                <h4 className="text-2xl font-bold text-slate-900 mb-2 tracking-tight">Kolaborasi Tim</h4>
                <p className="text-slate-500 text-sm font-medium leading-relaxed max-w-[90%]">
-                 Ruang kerja yang tak membatasi jumlah percabangan ide Anda.
+                 Ruang kerja yang tak membatasi kreativitas dan koordinasi tim Anda.
                </p>
             </div>
           </div>

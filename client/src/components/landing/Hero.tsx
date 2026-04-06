@@ -64,7 +64,7 @@ const Hero = () => {
         </nav>
       </header>
 
-      <section className="relative w-full lg:h-screen min-h-[100vh] bg-blue-600 overflow-hidden flex items-center justify-center pt-24 lg:pt-16">
+      <section className="relative w-full lg:h-screen min-h-[100vh] bg-gradient-to-br from-[#1E40AF] via-[#2563EB] to-[#3B82F6] overflow-hidden flex items-center justify-center pt-24 lg:pt-16">
         
         {/* Subtle Grid Pattern */}
         <div className="absolute inset-0 opacity-10" style={{
@@ -73,7 +73,7 @@ const Hero = () => {
         }}></div>
 
       {/* Hero Content */}
-      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-8 mt-10 lg:mt-16">
+      <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-0">
         <div className="grid lg:grid-cols-2 gap-8 sm:gap-12 items-center">
           {/* Left Content */}
           <div className="space-y-4 sm:space-y-6 text-white">
@@ -117,7 +117,7 @@ const Hero = () => {
 
           {/* Right Content - Phone Mockup */}
           <div className="relative flex items-center justify-center mt-8 lg:mt-0">
-            <div className="relative scale-90 sm:scale-100 transform lg:translate-y-[-20px] xl:translate-y-0">
+            <div className="relative scale-90 sm:scale-[0.85] lg:scale-[0.9] xl:scale-100 transform">
               {/* Phone Frame */}
               <div className="relative w-[280px] lg:w-[300px] h-[580px] lg:h-[600px] bg-slate-900 rounded-[2.5rem] p-2.5 shadow-2xl border-[6px] border-slate-800">
                 {/* Notch */}
@@ -137,7 +137,7 @@ const Hero = () => {
 
                   {/* Chat Header */}
                   <div className="px-5 pb-3 flex items-center space-x-2">
-                    <div className="w-8 h-8 rounded-full bg-blue-500"></div>
+                    <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-[10px] text-white font-bold">SJ</div>
                     <div>
                       <h3 className="text-white text-sm font-bold">Sarah Johnson</h3>
                       <p className="text-[10px] text-green-400 flex items-center">
@@ -152,32 +152,32 @@ const Hero = () => {
                     {/* Received Message */}
                     <div className="flex justify-start">
                       <div className="bg-white/10 backdrop-blur-sm rounded-2xl rounded-tl-sm px-3 py-2 max-w-[70%]">
-                        <p className="text-white text-[10px]">Halo! Gimana kabarnya?</p>
-                        <p className="text-[8px] text-white/50 mt-0.5">10:30</p>
+                        <p className="text-white text-[10px]">Halo! Sudah coba fitur baru Chatly? 💬</p>
+                        <p className="text-[8px] text-white/50 mt-0.5">09:41</p>
                       </div>
                     </div>
                     
                     {/* Sent Message */}
                     <div className="flex justify-end">
                       <div className="bg-[#2563EB] rounded-2xl rounded-tr-sm px-3 py-2 max-w-[70%]">
-                        <p className="text-white text-[10px]">Baik banget! Lagi coba app chat baru nih 🚀</p>
-                        <p className="text-[8px] text-white/70 mt-0.5">10:31</p>
+                        <p className="text-white text-[10px]">Sudah dong! Pengalamannya mulus banget 🚀</p>
+                        <p className="text-[8px] text-white/70 mt-0.5">09:42</p>
                       </div>
                     </div>
 
                     {/* Received Message */}
                     <div className="flex justify-start">
                       <div className="bg-white/10 backdrop-blur-sm rounded-2xl rounded-tl-sm px-3 py-2 max-w-[70%]">
-                        <p className="text-white text-[10px]">Wah keren! UI-nya bagus ya 😍</p>
-                        <p className="text-[8px] text-white/50 mt-0.5">10:31</p>
+                        <p className="text-white text-[10px]">Setuju! UI-nya juga clean & sangat responsif ✨</p>
+                        <p className="text-[8px] text-white/50 mt-0.5">09:42</p>
                       </div>
                     </div>
 
                     {/* Sent Message */}
                     <div className="flex justify-end">
                       <div className="bg-[#2563EB] rounded-2xl rounded-tr-sm px-3 py-2 max-w-[70%]">
-                        <p className="text-white text-[10px]">Iya! Cepat lagi 💬</p>
-                        <p className="text-[8px] text-white/70 mt-0.5">10:32</p>
+                        <p className="text-white text-[10px]">Bener, jadi makin betah ngobrol di sini 😊</p>
+                        <p className="text-[8px] text-white/70 mt-0.5">09:43</p>
                       </div>
                     </div>
                   </div>
